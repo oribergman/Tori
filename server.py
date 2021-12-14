@@ -82,7 +82,7 @@ def handle_send_receive_msg(data, port, clientIP, dst_ip, stations, ret_msg_queu
     # creating the list of tuples containing the ip and the key
     ip_key_list = []
     for i in range(len(stations)):
-        ip_key_list.append((stations[i], ip_key_dict[stations[i]]))
+        ip_key_list.append((stations[i], ip_key_dict[stations[i]s]))
     # building layers on top of the packet
 
     msg = OnionServer.buildLayerAll(data, ip_key_list, dst_ip)
@@ -234,7 +234,6 @@ public_key = rsa_keys.get_public_key_pem().decode()
 station_per_msg = 1
 ToriDB = DB.DB("ToriDB")
 http_q = queue.Queue()
-threading.Thread(target=proxy).start()
 port_dict = {}  # port : (ip of client, ip of the site , list of stations for the msg)
 port_dict[59185] = None
 ToriDB.addStation("64:00:6a:42:4a:de")
@@ -271,7 +270,7 @@ while True:
                 # add the key to the dictionary
                 ip_key_dict[ip] = AESClass.AESCipher(sym_key)
                 if len(ip_key_dict) >= station_per_msg:
-                    threading.Thread(target=wait_for_packet).start()
+                    threading.Thread(target=proxy).start()
         else:
             # if the communication is not permitted , kick the ip off the server
             my_server.disconnect(ip)

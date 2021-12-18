@@ -26,8 +26,8 @@ def send_and_receive_site(site_IP, msg):
     socket_to_site = socket.socket()
     socket_to_site.connect((site_IP, 80))
     socket_to_site.send(msg.encode())
-    data = socket_to_site.recv(1024)
-    print(data)
+    data = socket_to_site.recv(2048)
+    print("GOT BACK", data)
     return data
 
 

@@ -47,8 +47,7 @@ class ServerComs(object):
                             length = int(current_socket.recv(5).decode())
                             msg = current_socket.recv(length).decode()
                         except Exception as e:
-                            print("lol finder lo yodea")
-                            print(e)
+                            print(e,2)
                             self.disconnect(self.__users_dict[current_socket][0])
                         else:
                             # put into server queue
@@ -68,7 +67,7 @@ class ServerComs(object):
         try:
             sock.send((length+msg))
         except Exception as e:
-            print(e)
+            print(e,1)
             self.disconnect(ip)
 
     def disconnect(self, ip):

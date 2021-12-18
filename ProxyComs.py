@@ -17,8 +17,8 @@ class ProxyComs(object):
         # create the server socket and listen
         self.__serverSock = socket.socket()
         self.__serverSock.bind(('0.0.0.0', self.__port))
-        self.__serverSock.listen(3)
-        self.__open_clients = {}  # ip:socket
+        self.__serverSock.listen(1)
+        self.__open_clients = {}  # port:socket
         threading.Thread(target=self.__receive).start()
 
     def __receive(self):
@@ -39,47 +39,56 @@ class ProxyComs(object):
                         print(f'{address} - connected')
                         # add to dictionary
                         self.__users_dict[client] = address
-                        self.__open_clients[address[0]] = client
+                        self.__open_clients[address[1]] = client
                     else:
                         # receive info
                         try:
-                            msg = current_socket.recv(4096).decode()
+                            msg = current_socket.recv(20000).decode()
                         except Exception as e:
-                            print(e)
-                            self.disconnect(self.__users_dict[current_socket][0])
+                            print(e,3)
+                            if current_socket in self.__users_dict.keys():
+                                self.disconnect(self.__users_dict[current_socket][1])
                         else:
-                            # put into server queue
-                            self.__serverQueue.put((self.__users_dict[current_socket][0], msg))
+                            if len(msg) == 0:
+                                if current_socket in self.__users_dict.keys():
+                                    self.disconnect(self.__users_dict[current_socket][1])
+                            else:
+                                # put into server queue
+                                self.__serverQueue.put((self.__users_dict[current_socket][1], msg))
 
-    def sendMsg(self, ip, msg):
+    def sendMsg(self, port, msg):
         """
 
         :param ip: ip to send to
         :param msg: msg to send
         :return: sends the msg to the ip
         """
-        sock = self.__open_clients[ip]
+        sock = self.__open_clients[port]
         if type(msg) == str:
             msg = msg.encode()
         try:
             sock.send(msg)
         except Exception as e:
-            print(e)
-            self.disconnect(ip)
+            print(e,4)
+            self.disconnect(port)
 
-    def disconnect(self, ip):
+    def disconnect(self, port):
         """
 
         :param ip: ip address
         disconnects the socket of the ip from the server
         """
+        print("DISCONNECTING", port)
+        if port in self.__open_clients.keys():
+            try:
+                print(f"{port} disconnected")
+                self.__open_clients[port].close()
+                del self.__users_dict[self.__open_clients[port]]
+                del self.__open_clients[port]
 
-        if ip in self.__open_clients.keys():
-            print(f"{self.__users_dict[self.__open_clients[ip]]} disconnected")
-            self.__open_clients[ip].close()
+            except Exception as e:
+                print("E-", e)
 
-            del self.__users_dict[self.__open_clients[ip]]
-            del self.__open_clients[ip]
 
     def close_server(self):
         """

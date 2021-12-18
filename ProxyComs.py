@@ -19,6 +19,7 @@ class ProxyComs(object):
         self.__serverSock.bind(('0.0.0.0', self.__port))
         self.__serverSock.listen(1)
         self.__open_clients = {}  # port:socket
+        self.__bufferSize = 1024
         threading.Thread(target=self.__receive).start()
 
     def __receive(self):
@@ -42,19 +43,30 @@ class ProxyComs(object):
                         self.__open_clients[address[1]] = client
                     else:
                         # receive info
-                        try:
-                            msg = current_socket.recv(20000).decode()
-                        except Exception as e:
-                            print(e,3)
+                        receiving = True
+                        msg = ""
+                        while receiving:
+                            try:
+                                msg = msg + current_socket.recv(self.__bufferSize).decode()
+                            except Exception as e:
+                                print(e,3)
+                                if current_socket in self.__users_dict.keys():
+                                    self.disconnect(self.__users_dict[current_socket][1])
+
+                                else:
+                                    current_socket.close()
+                                break
+                            else:
+                                # got the full msg
+                                if len(msg) < self.__bufferSize:
+                                    receiving = False
+
+                        if len(msg) == 0:
                             if current_socket in self.__users_dict.keys():
                                 self.disconnect(self.__users_dict[current_socket][1])
                         else:
-                            if len(msg) == 0:
-                                if current_socket in self.__users_dict.keys():
-                                    self.disconnect(self.__users_dict[current_socket][1])
-                            else:
-                                # put into server queue
-                                self.__serverQueue.put((self.__users_dict[current_socket][1], msg))
+                            # put into server queue
+                            self.__serverQueue.put((self.__users_dict[current_socket][1], msg))
 
     def sendMsg(self, port, msg):
         """

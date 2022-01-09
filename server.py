@@ -83,8 +83,8 @@ def handle_send_receive_msg(data, port, client_port, dst_ip, stations, ret_msg_q
     ip_key_list = []
     for i in range(len(stations)):
         ip_key_list.append((stations[i], ip_key_dict[stations[i]]))
-    # building layers on top of the packet
 
+    # building layers on top of the packet
     msg = OnionServer.buildLayerAll(data, ip_key_list, dst_ip)
     # sends the msg forward
     sending_client.sendMsg(msg)
@@ -106,8 +106,9 @@ def send_msg_to_client(ret_msg, client_port, ip_key_list, ret_msg_queue):
     for i in range(len(ip_key_list)-1, -1, -1):
         list_of_keys.append(ip_key_list[i][1])
     # remove all the layers
+
     ret_msg = OnionServer.removeLayerAll(ret_msg, list_of_keys)
-    print("SENDING BACK TO USER - " + str(ret_msg))
+
     ret_msg_queue.put((client_port, ret_msg))
 
 
@@ -123,59 +124,63 @@ def proxy():
     ret_msg_queue = queue.Queue()
     # handle msg's from the proxy server
     while True:
-        # extract a msg
-        client_port, msg = proxy_queue.get()
-        print("MSG- ", msg)
-        # if its a GET request
-        if msg.startswith("GET"):
-            print("MSG- ", msg)
-            # extract the url
-            url = msg.split("/")[2]
-            print("URL", url)
-            # get the ip of the url
-            dst_ip = socket.gethostbyname(url)
+        if not proxy_queue.empty():
+            # extract a msg
+            client_port, msg = proxy_queue.get()
+            msg = msg.decode()
+            # if its a GET request
+            if len(msg) == 0:
+                proxy_server.disconnect(client_port)
 
-            # roll stations for the msg
-            stations_for_msg = roll_stations()
-            # get the last station
-            lastIP = stations_for_msg[-1]
+            if msg.startswith("GET"):
+                print("LEN OF MSG", len(msg))
+                print(msg)
+                # extract the url
+                url = msg.split("/")[2]
+                # get the ip of the url
+                try:
+                    dst_ip = socket.gethostbyname(url)
+                except Exception as e:
+                    continue
 
-            # roll port
-            port = roll_port()
+                # roll stations for the msg
+                stations_for_msg = roll_stations()
+                # get the last station
+                lastIP = stations_for_msg[-1]
 
-            # send the port to all the stations and wait for the accept
-            for station_ip in stations_for_msg:
+                # roll port
+                port = roll_port()
 
-                received_ok = False
-                # send the port to the station
-                while not received_ok:
-                    # build by protocol
-                    chosen_port = ServerProtocol.buildSendPort(port)
-                    print("Sent port " + str(chosen_port))
-                    # encrypt
-                    chosen_port = ip_key_dict[station_ip].encrypt(chosen_port)
-                    # send the port
-                    my_server.sendMsg(station_ip, chosen_port)
-                    # wait for ok
-                    ip, data = q.get()
-                    ok_msg = ip_key_dict[station_ip].decrypt(data)
-                    code, ok_msg = ServerProtocol.unpack(ok_msg)
-                    # received OK
-                    if code == "05":
-                        print("OK")
-                        received_ok = True
-            # after the stations servers are up save the data on the msg
-            port_dict[chosen_port] = (client_port, dst_ip, stations_for_msg)
-            # open the code that sends the msg
-            threading.Thread(target=handle_send_receive_msg, args=(msg, port, client_port, dst_ip, stations_for_msg, ret_msg_queue)).start()
+                # send the port to all the stations and wait for the accept
+                for station_ip in stations_for_msg:
+
+                    received_ok = False
+                    # send the port to the station
+                    while not received_ok:
+                        # build by protocol
+                        chosen_port = ServerProtocol.buildSendPort(port)
+                        # encrypt
+                        chosen_port = ip_key_dict[station_ip].encrypt(chosen_port)
+                        # send the port
+                        my_server.sendMsg(station_ip, chosen_port)
+                        # wait for ok
+                        ip, data = q.get()
+                        ok_msg = ip_key_dict[station_ip].decrypt(data)
+                        code, ok_msg = ServerProtocol.unpack(ok_msg)
+                        # received OK
+                        if code == "05":
+                            received_ok = True
+                # after the stations servers are up save the data on the msg
+                port_dict[chosen_port] = (client_port, dst_ip, stations_for_msg)
+                # open the code that sends the msg
+                threading.Thread(target=handle_send_receive_msg, args=(msg, port, client_port, dst_ip, stations_for_msg, ret_msg_queue)).start()
+
         # if there is a msg to send back
-        elif not ret_msg_queue.empty():
+        if not ret_msg_queue.empty():
             # get  the ip and the msg to return
             (clientIP, msg) = ret_msg_queue.get()
-            print()
-            print()
-            print()
-            print("CLIENT PORT - ", client_port, "MSG- ", msg)
+            print(len(msg))
+            print("CLIENT PORT - ", client_port, "RETMSG- ", msg)
             # return the msg to the client
             proxy_server.sendMsg(client_port, msg)
             # disconnect the client
@@ -243,7 +248,6 @@ ToriDB = DB.DB("ToriDB")
 http_q = queue.Queue()
 port_dict = {}  # port : (ip of client, ip of the site , list of stations for the msg)
 port_dict[59185] = None
-ToriDB.addStation("64:00:6a:42:4a:de")
 
 while True:
     # server for connection and change in keys
@@ -262,6 +266,7 @@ while True:
                 my_server.sendMsg(ip, msg_ret)
 
             else:
+                print("NOT ALLOWED")
                 my_server.disconnect(ip)
         # check if the communication is permitted
         if ip in ip_mac_dict:

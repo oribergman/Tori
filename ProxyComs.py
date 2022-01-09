@@ -37,17 +37,17 @@ class ProxyComs(object):
                     if current_socket is self.__serverSock:
                         # new client
                         client, address = self.__serverSock.accept()
-                        print(f'{address} - connected')
+                        #print(f'{address} - connected')
                         # add to dictionary
                         self.__users_dict[client] = address
                         self.__open_clients[address[1]] = client
                     else:
                         # receive info
                         receiving = True
-                        msg = ""
+                        msg = bytearray()
                         while receiving:
                             try:
-                                msg = msg + current_socket.recv(self.__bufferSize).decode()
+                                data = current_socket.recv(self.__bufferSize)
                             except Exception as e:
                                 print(e,3)
                                 if current_socket in self.__users_dict.keys():
@@ -57,8 +57,9 @@ class ProxyComs(object):
                                     current_socket.close()
                                 break
                             else:
+                                msg.extend(data)
                                 # got the full msg
-                                if len(msg) < self.__bufferSize:
+                                if len(data) < self.__bufferSize:
                                     receiving = False
 
                         if len(msg) == 0:
@@ -78,6 +79,7 @@ class ProxyComs(object):
         sock = self.__open_clients[port]
         if type(msg) == str:
             msg = msg.encode()
+        print("SENDING TO CLIENT - ", msg)
         try:
             sock.send(msg)
         except Exception as e:
@@ -90,17 +92,15 @@ class ProxyComs(object):
         :param ip: ip address
         disconnects the socket of the ip from the server
         """
-        print("DISCONNECTING", port)
         if port in self.__open_clients.keys():
             try:
-                print(f"{port} disconnected")
+               # print(f"{port} disconnected")
                 self.__open_clients[port].close()
                 del self.__users_dict[self.__open_clients[port]]
                 del self.__open_clients[port]
 
             except Exception as e:
                 print("E-", e)
-
 
     def close_server(self):
         """

@@ -45,7 +45,7 @@ def buildSendMsgRet(msg):
     code = "07"
 
     len_msg = str(len(msg)).zfill(8)
-    if type(msg) == bytes:
+    if type(msg) == bytearray or type(msg) == bytes:
         msg = msg.decode()
     msg = code + len_msg + msg
 
@@ -58,6 +58,7 @@ def unpack(msg):
     :param msg: the msg to unpack
     :return: unpacks the msg according to the protocol and returns a tuple of the code and the msg
     """
+    print("unpcaking", msg)
     # extract msg code
     code = msg[:2]
     msg = msg[2:]

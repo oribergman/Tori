@@ -1,9 +1,8 @@
 import socket
 import threading
 import queue
-import time
 
-
+#TODO: #oribergmanefes
 class StationComs(object):
     def __init__(self, port, ip, q):
         """
@@ -18,6 +17,7 @@ class StationComs(object):
         self.__q = q
         self.__sock = socket.socket()
         self.__sock.connect((self.__ip, self.__port))
+        self.__bufferSize = 1024
         threading.Thread(target=self.__receive).start()
 
     def __receive(self):
@@ -26,14 +26,27 @@ class StationComs(object):
         :return: receives from the socket and puts in the queue of the station
         """
         while True:
+            # recieve the length
             try:
-                length = self.__sock.recv(5).decode()
-                msg = self.__sock.recv(int(length))
+                length = self.__sock.recv(8).decode()
             except Exception as e:
                 print(e)
                 self.__sock.close()
-                break
             else:
+                # initialize the msg
+                msg = bytearray()
+                counter = 0
+                while counter < int(length):
+                    try:
+                        data = self.__sock.recv(self.__bufferSize)
+                    except Exception as e:
+                        print(e)
+                        self.__sock.close()
+                        break
+                    else:
+                        msg.extend(data)
+                        counter += len(data)
+                        # got full msg
                 self.__q.put(msg)
 
     def sendMsg(self, msg):
@@ -42,13 +55,12 @@ class StationComs(object):
         :param msg: the msg to send
         :return: sends the msg
         """
-        length = str(len(msg)).zfill(5).encode()
         if type(msg) == str:
             msg = msg.encode()
+        length_msg = str(len(msg)).zfill(8).encode()
         try:
-            self.__sock.send(length+msg)
+            self.__sock.send(length_msg+msg)
         except Exception as e:
-            pass
             print(1)
             print(e)
             self.__sock.close()

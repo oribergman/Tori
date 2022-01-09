@@ -20,6 +20,7 @@ class ServerComs(object):
         self.__serverSock.bind(('0.0.0.0', self.__port))
         self.__serverSock.listen(3)
         self.__open_clients = {} # ip:socket
+        self.__bufferSize = 1024
         threading.Thread(target=self.__receive).start()
 
     def __receive(self):
@@ -37,21 +38,41 @@ class ServerComs(object):
                     if current_socket is self.__serverSock:
                         # new client
                         client, address = self.__serverSock.accept()
-                        print(f'{address} - connected')
+                        # print(f'{address} - connected')
                         # add to dictionary
                         self.__users_dict[client] = address
                         self.__open_clients[address[0]] = client
                     else:
                         # receive info
-                        try:
-                            length = int(current_socket.recv(5).decode())
-                            msg = current_socket.recv(length).decode()
-                        except Exception as e:
-                            print(e,2)
-                            self.disconnect(self.__users_dict[current_socket][0])
-                        else:
-                            # put into server queue
-                            self.__serverQueue.put((self.__users_dict[current_socket][0], msg))
+                        while True:
+                            try:
+                                # receive length of msg
+                                length = current_socket.recv(8).decode()
+                            except Exception as e:
+                                if current_socket in self.__users_dict.keys():
+                                    self.disconnect(self.__users_dict[current_socket][0])
+                                break
+
+                            else:
+                                # disconnected
+                                if length == '':
+                                    self.disconnect(self.__users_dict[current_socket][0])
+                                else:
+                                   # initiate msg
+                                    msg = bytearray()
+                                    counter = 0
+                                    # receive the msg
+                                    while counter < int(length):
+                                        try:
+                                            data = current_socket.recv(self.__bufferSize)
+                                        except Exception as e:
+                                            print(e)
+                                            self.disconnect(self.__users_dict[current_socket][0])
+                                        else:
+                                            msg.extend(data)
+                                            counter += len(data)
+                                    print(data)
+                                    self.__serverQueue.put((self.__users_dict[current_socket][0], msg.decode()))
 
     def sendMsg(self, ip, msg):
         """
@@ -61,11 +82,11 @@ class ServerComs(object):
         :return:
         """
         sock = self.__open_clients[ip]
-        length = str(len(msg)).zfill(5).encode()
         if type(msg) == str:
             msg = msg.encode()
+        length = str(len(msg)).zfill(8).encode()
         try:
-            sock.send((length+msg))
+            sock.send(length+msg)
         except Exception as e:
             print(e,1)
             self.disconnect(ip)
@@ -78,7 +99,7 @@ class ServerComs(object):
         """
 
         if ip in self.__open_clients.keys():
-            print(f"{self.__users_dict[self.__open_clients[ip]]} disconnected")
+            #print(f"{self.__users_dict[self.__open_clients[ip]]} disconnected")
             self.__open_clients[ip].close()
 
             del self.__users_dict[self.__open_clients[ip]]

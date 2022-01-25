@@ -73,21 +73,38 @@ def buildChNumOfStations(num):
     return msg
 
 
+def buildAskForNumOfStations():
+    """
+
+    :return: a msg built by the protocol to send to the server to give the current the number of stations per msg
+    """
+    code = "14"
+
+    msg = code
+
+    return msg
+
+
 def unpack(msg):
     """
 
     :param msg: msg to unpack
     :return: unpacks the msg according to the protocol and returns a tuple of the code and the msg
     """
-
+    print(msg)
     # extract msg code
     code = msg[:2]
     msg = msg[2:]
+    data = ""
 
     # sent public key
     if code == "01":
         length = int(msg[0:8])
         data = msg[8:length + 8]
+
+    elif code == "03":
+        length = int(msg[0:2])
+        data = msg[2:length + 2]
 
     elif code == "09":
         length = int(msg[0:1])
@@ -117,6 +134,9 @@ def unpack(msg):
         # extract port number
         port = msg[0:5]
         data = (IP1, IP2, station_list, port)
+
+    elif code == "15":
+        data = msg
 
     return (code, data)
 

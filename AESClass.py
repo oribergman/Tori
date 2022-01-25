@@ -52,5 +52,3 @@ class AESCipher(object):
         :return: returns the string to normal size of bits
         """
         return s[:-ord(s[len(s)-1:])]
-
-

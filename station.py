@@ -9,6 +9,7 @@ import ServerComs
 import OnionStation
 from scapy.all import *
 import socket
+import select
 
 
 def send_and_receive_site(site_IP, msg):
@@ -23,15 +24,34 @@ def send_and_receive_site(site_IP, msg):
     # data = response[Raw].load
     #
     # return data
+    # create the socket connection to the site
     socket_to_site = socket.socket()
     socket_to_site.connect((site_IP, 80))
     socket_to_site.send(msg.encode())
-    data = socket_to_site.recv(1024)
-    print(data)
-    return data
+    msg = bytearray()
+    while True:
+        rlist, wlist, xlist = select.select([socket_to_site],[],[])
+        if rlist:
+            data = socket_to_site.recv(1024)
+            if data == b'':
+                break
+            msg.extend(data)
+        else:
+            msg.extend(b'%*ORI*%')
+            break
+    try:
+        print("FINAL DATA", msg.decode())
+    except:
+        pass
+    return msg
 
 
 def open_listening_server(port):
+    """
+
+    :param port: the port to listen on
+    :return: opens a listening server on the port receives and sends the data forward
+    """
     # listen for the msg
     print("received port - " + str(port))
     listening_q = queue.Queue()
@@ -59,8 +79,9 @@ def open_listening_server(port):
     print("NEXT STATION - " + str(next_station), "SITE_IP - " + str(site_IP))
     # in case the next station is the site is from the site
     if next_station == site_IP:
-        data = send_and_receive_site(site_IP, msg).decode()
-        print("GOT FROM SITE", data)
+        print("THE MSG TO SEND ", msg)
+        data = send_and_receive_site(site_IP, msg)
+
 
     # the response will come in the former listening server
     else:
@@ -72,7 +93,9 @@ def open_listening_server(port):
         site_IP, data = listening_q.get()
         print("data from another station - " + str(data))
     # build a layer on top of the returning msg
+    print("BEFORE ENC", data)
     ret_msg = OnionStation.buildLayer(data, sym_key)
+    print("ENC", ret_msg)
     # send the msg to the previous station
     # create sending client
     sending_q = queue.Queue()
@@ -84,11 +107,13 @@ def open_listening_server(port):
 # get the mac address of the station
 mac = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
                 for ele in range(0, 8 * 6, 8)][::-1])
-my_q = queue.Queue()
+first_con_q = queue.Queue()
 # create a station client
-client = StationComs.StationComs(59185, "192.168.4.97", my_q)
+client = StationComs.StationComs(59185, "192.168.4.97", first_con_q)
 # send mac address
+print("mymac", mac)
 msg = StationProtocol.buildSendMacAdr(mac)
+print("msg", msg)
 client.sendMsg(msg)
 # create public and private keys
 rsa_keys = RSAClass.RSAClass()
@@ -97,7 +122,7 @@ public_key = rsa_keys.get_public_key_pem().decode()
 
 connecting = True
 while connecting:
-    data = my_q.get().decode()
+    data = first_con_q.get().decode()
     code, msg = StationProtocol.unpack(data)
 
     # server sending public key
@@ -108,7 +133,7 @@ while connecting:
         # send the public
         client.sendMsg(msg_ret)
         # wait for the symetric key msg
-        data = my_q.get()
+        data = first_con_q.get()
         print("DATA = " + str(data))
         # decrypt the msg
         msg = rsa_keys.decrypt_msg(data).decode()
@@ -120,7 +145,7 @@ while connecting:
         connecting = False
 # after the station finished connecting
 while True:
-    data = my_q.get()
+    data = first_con_q.get()
     data = sym_key.decrypt(data)
     code, msg = StationProtocol.unpack(data)
     print("data = " + str(data), "code = " + str(code))

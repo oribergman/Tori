@@ -19,6 +19,12 @@ def buildLayer(msg, key):
 
 
 def remove_layer(msg, key):
+    """
+
+    :param msg: msg to remove layer from
+    :param key: the key to decrypt the data with
+    :return: the msg after the decryption and after the protocol translation
+    """
     new_msg = key.decrypt(msg)
     data = StationProtocol.unpack(new_msg)
     return data

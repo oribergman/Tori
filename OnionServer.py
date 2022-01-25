@@ -12,6 +12,7 @@ def buildLayer(msg, ip,lastIP, key):
     :param key: (AESCipher) key
     :return: builds a layer on top of the msg
     """
+
     new_msg = ServerProtocol.buildSendMsg(msg, ip, lastIP)
     new_msg = key.encrypt(new_msg)
     return new_msg.decode()
@@ -36,7 +37,8 @@ def removeLayerAll(msg, key_list):
     :param key_list: list of keys to decrypt the msg (must be in order)
     :return:
     """
-    for key in key_list:
+
+    for key in reversed(key_list):
         msg = removeLayer(msg, key)
 
     return msg
@@ -50,13 +52,15 @@ def buildLayerAll(msg,ip_key_list, lastIP):
     :param lastIP: ip of site
     :return: builds all the layers of the msg by all the ips and keys
     """
+    # last station enryption go first
 
-    # build all the layers
-    for index in range(len(ip_key_list)-1):
+    data = buildLayer(msg, lastIP, lastIP, ip_key_list[len(ip_key_list)-1][1])
+    # build all the layers except the first and last station
+    for index in range(len(ip_key_list)-2,0,-1):
         # build layer
-        data = buildLayer(msg, ip_key_list[index+1][0], lastIP, ip_key_list[index][1])
-    if len(ip_key_list) == 1:
-        data = buildLayer(msg, lastIP, lastIP, ip_key_list[0][1])
+        data = buildLayer(data, ip_key_list[index+1][0], lastIP, ip_key_list[index][1])
+    # first station encryption goes last
+    data = buildLayer(data, ip_key_list[1][0], lastIP, ip_key_list[0][1])
 
     return data
 

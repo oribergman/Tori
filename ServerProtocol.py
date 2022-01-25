@@ -105,14 +105,30 @@ def buildRealTimeInfo(msgfrom, msgto, stations, port):
     return msg
 
 
+def buildSendCurrentNum(num):
+    """
+
+    :param num: number of stations per msg
+    :return: a msg built by the protocol to send back to manager the current number of stations per msg
+    """
+
+    code = "15"
+
+    msg = code + str(num)
+
+    return msg
+
+
 def unpack(msg):
     """
 
    :param msg: the msg to unpack
    :return: unpacks the msg according to the protocol and returns a tuple of the code and the msg
     """
+
     code = msg[:2]
     msg = msg[2:]
+    data = ""
 
     # sent mac address
     if code == "00":
@@ -143,7 +159,7 @@ def unpack(msg):
 
         data = (user, password)
 
-    elif code == "11" or code == "12" or code == "13":
+    elif code == "11" or code == "12" or code == "13" or code == "14":
         data = msg
 
     return (code, data)

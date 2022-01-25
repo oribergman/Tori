@@ -11,55 +11,8 @@ import StationComs
 import OnionServer
 import ProxyComs
 
-# def wait_for_packet():
-#     """
-#
-#     :return: waits for the a msg
-#     """
-#     while True:
-#         if not http_q.empty():
-#             packet = http_q.get()
-#             # roll stations for the msg
-#             stations_for_msg = roll_stations()
-#             # get the ip of the last station
-#             lastIP = stations_for_msg[-1]
-#             # save the destination ip
-#             dst_ip = packet[IP].dst
-#             # save the ip of the client
-#             client_IP = packet[IP].src
-#             # roll port
-#             chosen_port = roll_port()
-#             # send the port to all the stations and wait for the accept
-#             for station_ip in stations_for_msg:
-#                 received_ok = False
-#                 # send the port to the station
-#                 while not received_ok:
-#                     # build by protocol
-#                     msg = ServerProtocol.buildSendPort(chosen_port)
-#                     # encrypt
-#                     msg = ip_key_dict[station_ip].encrypt(msg)
-#                     # send the msg
-#                     my_server.sendMsg(station_ip, msg)
-#                     print("Sent port " + str(chosen_port))
-#                     # wait for ok
-#                     ip, data = q.get()
-#                     msg = ip_key_dict[station_ip].decrypt(data)
-#                     code, msg = ServerProtocol.unpack(msg)
-#                     # received OK
-#                     if code == "05":
-#                         print("OK")
-#                         received_ok = True
-#
-#             # change the ip in the packet
-#             packet[IP].src = stations_for_msg[-1]
-#             data_of_msg = packet[Raw].load
-#             # after the stations servers are up save the data on the msg
-#             port_dict[chosen_port] = (client_IP, dst_ip, stations_for_msg)
-#             # open the code that sends the msg
-#             threading.Thread(target=handle_send_receive_msg,args=(data_of_msg, chosen_port, client_IP, dst_ip, stations_for_msg)).start()
 
-
-def handle_send_receive_msg(data, port, clientIP, dst_ip, stations, ret_msg_queue):
+def handle_send_receive_msg(data, port, client_port, dst_ip, stations, ret_msg_queue):
 
     """
 
@@ -73,7 +26,7 @@ def handle_send_receive_msg(data, port, clientIP, dst_ip, stations, ret_msg_queu
     """
     # creating listening server
     listening_q = queue.Queue()
-    listenting_server = ServerComs.ServerComs(port, listening_q)
+    listenting_server = ServerComs.ServerComs(int(port), listening_q)
 
     sending_q = queue.Queue()
     # creating sending client
@@ -82,19 +35,20 @@ def handle_send_receive_msg(data, port, clientIP, dst_ip, stations, ret_msg_queu
     # creating the list of tuples containing the ip and the key
     ip_key_list = []
     for i in range(len(stations)):
-        ip_key_list.append((stations[i], ip_key_dict[stations[i]s]))
-    # building layers on top of the packet
+        ip_key_list.append((stations[i], ip_key_dict[stations[i]]))
+    print("IP_KEY- ", ip_key_list)
 
+    # building layers on top of the packet
     msg = OnionServer.buildLayerAll(data, ip_key_list, dst_ip)
     # sends the msg forward
     sending_client.sendMsg(msg)
 
     # wait for the returning msg from the site
     ip, ret_msg = listening_q.get()
-    send_msg_to_client(ret_msg, clientIP, ip_key_list, ret_msg_queue)
+    send_msg_to_client(ret_msg, client_port, ip_key_list, ret_msg_queue)
 
 
-def send_msg_to_client(ret_msg, clientIP, ip_key_list, ret_msg_queue):
+def send_msg_to_client(ret_msg, client_port, ip_key_list, ret_msg_queue):
     """
 
     :param ret_msg: the returning msg from the site
@@ -106,9 +60,10 @@ def send_msg_to_client(ret_msg, clientIP, ip_key_list, ret_msg_queue):
     for i in range(len(ip_key_list)-1, -1, -1):
         list_of_keys.append(ip_key_list[i][1])
     # remove all the layers
+
     ret_msg = OnionServer.removeLayerAll(ret_msg, list_of_keys)
-    print("SENDING BACK TO USER - " + str(ret_msg))
-    ret_msg_queue.put(clientIP, ret_msg)
+
+    ret_msg_queue.put((client_port, ret_msg))
 
 
 def proxy():
@@ -123,66 +78,160 @@ def proxy():
     ret_msg_queue = queue.Queue()
     # handle msg's from the proxy server
     while True:
-        # extract a msg
-        client_ip, msg = proxy_queue.get()
-        print("MSG- ", msg)
-        # if its a GET request
-        if msg.startswith("GET"):
-            # extract the url
-            url = msg.split("/")[2]
-            print("URL", url)
-            # get the ip of the url
-            dst_ip = socket.gethostbyname(url)
+        if not proxy_queue.empty():
+            # extract a msg
+            client_port, msg = proxy_queue.get()
+            msg = msg.decode()
+            # if its a GET request
+            if len(msg) == 0:
+                proxy_server.disconnect(client_port)
 
-            # roll stations for the msg
-            stations_for_msg = roll_stations()
-            # get the last station
-            lastIP = stations_for_msg[-1]
+            if msg.startswith("GET"):
+                print("LEN OF MSG", len(msg))
+                print(msg)
+                # extract the url
+                url = msg.split("/")[2]
+                # get the ip of the url
+                try:
+                    dst_ip = socket.gethostbyname(url)
+                except Exception as e:
+                    continue
 
-            # roll port
-            chosen_port = roll_port()
+                # roll stations for the msg
+                stations_for_msg = roll_stations()
+                # get the last station
+                lastIP = stations_for_msg[-1]
 
-            # send the port to all the stations and wait for the accept
-            for station_ip in stations_for_msg:
+                # roll port
+                port = roll_port()
 
-                received_ok = False
-                # send the port to the station
-                while not received_ok:
-                    # build by protocol
-                    msg = ServerProtocol.buildSendPort(chosen_port)
-                    # encrypt
-                    msg = ip_key_dict[station_ip].encrypt(msg)
-                    # send the msg
-                    my_server.sendMsg(station_ip, msg)
-                    print("Sent port " + str(chosen_port))
-                    # wait for ok
-                    ip, data = q.get()
-                    msg = ip_key_dict[station_ip].decrypt(data)
-                    code, msg = ServerProtocol.unpack(msg)
-                    # received OK
-                    if code == "05":
-                        print("OK")
-                        received_ok = True
-            # after the stations servers are up save the data on the msg
-            port_dict[chosen_port] = (client_ip, dst_ip, stations_for_msg)
-            # open the code that sends the msg
-            threading.Thread(target=handle_send_receive_msg,args=(msg, chosen_port, client_ip, dst_ip, stations_for_msg, ret_msg_queue)).start()
+                # send the port to all the stations and wait for the accept
+                for station_ip in stations_for_msg:
+
+                    received_ok = False
+                    # send the port to the station
+                    while not received_ok:
+                        # build by protocol
+                        chosen_port = ServerProtocol.buildSendPort(port)
+                        # encrypt
+                        chosen_port = ip_key_dict[station_ip].encrypt(chosen_port)
+                        # send the port
+                        station_server.sendMsg(station_ip, chosen_port)
+                        # wait for ok
+                        ip, data = station_server_q.get()
+                        ok_msg = ip_key_dict[station_ip].decrypt(data)
+                        code, ok_msg = ServerProtocol.unpack(ok_msg)
+                        # received OK
+                        if code == "05":
+                            received_ok = True
+                            print("GOT OK FROM", ip)
+                # after the stations servers are up save the data on the msg
+                port_dict[chosen_port] = (client_port, dst_ip, stations_for_msg)
+                # open the code that sends the msg
+                threading.Thread(target=handle_send_receive_msg, args=(msg, port, client_port, dst_ip, stations_for_msg, ret_msg_queue)).start()
+
         # if there is a msg to send back
-        elif not ret_msg_queue.empty():
+        if not ret_msg_queue.empty():
             # get  the ip and the msg to return
-            clientIP, msg = ret_msg_queue.get()
+            (clientIP, msg) = ret_msg_queue.get()
+            print(len(msg))
+            print("CLIENT PORT - ", client_port, "RETMSG- ", msg)
             # return the msg to the client
-            proxy_server.sendMsg(clientIP, msg)
+            proxy_server.sendMsg(client_port, msg)
+            # disconnect the client
+            proxy_server.disconnect(client_port)
+
+
+def manager_comms(manager_server_q, manager_server):
+    global station_per_msg
+    ToriDB = DB.DB("ToriDB")
+    """
+
+    :param manager_server_q: the queue of the server that deal with manager comms
+    :param server_public_key: the public key of the server
+    """
+    while True:
+        # catch msg from server
+        ip, data = manager_server_q.get()
+
+        # check if encrypted with sym_key before logging in
+        if ip in ip_key_dict_temp.keys():
+            data = ip_key_dict_temp[ip].decrypt(data)
+
+        # check if encrypted with sym_key after logging in
+        elif ip in ip_key_dict.keys():
+            try:
+                data = ip_key_dict[ip].decrypt(data)
+            except:
+                del ip_key_dict[ip]
+
+        code, msg = ServerProtocol.unpack(data)
+
+        # the manager sent public key
+        if code == '02':
+            # public key of the manager
+            manager_pkey = msg.encode()
+            # randomizing a symetric key(string)
+            sym_key = roll_key()
+            # sending the manager symetric key
+            msg_ret = ServerProtocol.buildSendSymetricKey(sym_key)
+
+            # encrypting the data using the manager's public key
+            msg_ret = RSAClass.encrypt_msg(msg_ret, manager_pkey)
+            # send the symetric key
+            manager_server.sendMsg(ip, msg_ret)
+            # add the ip and the symetric key to the temp dictionary
+            ip_key_dict_temp[ip] = AESClass.AESCipher(sym_key)
+
+        # manager sent the username and password
+        elif code == '08':
+            username, password = msg
+            # checking the username and password
+            if ToriDB.checkUser(username, password):
+                # return the manager 'True'
+                msg_ret = ServerProtocol.buildLoginMsg("True")
+                msg_ret = ip_key_dict_temp[ip].encrypt(msg_ret)
+                manager_server.sendMsg(ip, msg_ret)
+
+                # delete from temp dict and move to normal dict
+                ip_key_dict[ip] = ip_key_dict_temp[ip]
+                del ip_key_dict_temp[ip]
+
+            else:
+                # return the manager False
+                msg_ret = ServerProtocol.buildLoginMsg("False")
+                msg_ret = ip_key_dict_temp[ip].encrypt(msg_ret)
+                manager_server.sendMsg(ip, msg_ret)
+
+        # add station
+        elif code == '11':
+            # adding the station
+            ToriDB.addStation(msg)
+
+        # delete station
+        elif code == '12':
+            ToriDB.deleteStation(msg)
+
+        # change number of station per msg
+        elif code == "13":
+            station_per_msg = msg
+
+        # manager asks for current number of station per msg
+        elif code == "14":
+            # send the current number
+            msg_ret = ServerProtocol.buildSendCurrentNum(station_per_msg)
+            enc_msg = ip_key_dict[ip].encrypt(msg_ret)
+            manager_server.sendMsg(ip, enc_msg)
 
 
 def roll_port():
     """
 
-    :return: unused port
+    :return: randomizing an unused port
     """
     found = False
     while not found:
-        port = random.randint(2000,50000)
+        port = random.randint(2000, 50000)
         # check if port not in use
         if not port in port_dict.keys():
             found = True
@@ -201,9 +250,10 @@ def roll_key():
         char = random.choice(l)
         string += char
 
-    if string in ip_key_dict.values():
+    if string in symkey_list:
         return roll_key()
     else:
+        symkey_list.append(string)
         return string
 
 
@@ -221,30 +271,45 @@ def roll_stations():
         if ip_adr not in stations_for_the_msg:
             count = count - 1
             stations_for_the_msg.append(ip_adr)
-
+    print(stations_for_the_msg)
     return stations_for_the_msg
 
 
-q = queue.Queue()
-my_server = ServerComs.ServerComs(59185, q)
+# creating the server for comms with the stations
+station_server_q = queue.Queue()
+station_server = ServerComs.ServerComs(59185, station_server_q)
+
+# creating a server for comms with manager
+manager_server_q = queue.Queue()
+manager_server = ServerComs.ServerComs(2028, manager_server_q)
+# opening thread to deal with manager comms
+threading.Thread(target=manager_comms, args=(manager_server_q, manager_server)).start()
+
+ip_key_dict_temp = {}
 ip_key_dict = {} # ip : key
 ip_mac_dict = {}
+symkey_list = [] # list of all sym keys
 rsa_keys = RSAClass.RSAClass()
+# createing the RSA keys
 public_key = rsa_keys.get_public_key_pem().decode()
-station_per_msg = 1
+# station per msg
+station_per_msg = 3
 ToriDB = DB.DB("ToriDB")
-http_q = queue.Queue()
+
 port_dict = {}  # port : (ip of client, ip of the site , list of stations for the msg)
+
+# special ports for comms with station and manager
 port_dict[59185] = None
-ToriDB.addStation("64:00:6a:42:4a:de")
+port_dict[2028] = None
+
+initialized_proxy = False
 
 while True:
-    # server for connection and change in keys
-    ip, data = q.get()
+    # server for connection and change in keys with stations
+    ip, data = station_server_q.get()
     # if the ip hasn't connected yet
     if not ip in list(ip_key_dict.keys()):
         code, msg = ServerProtocol.unpack(data)
-
         # msg is the mac address
         if code == "00":
             mac_adr = msg
@@ -252,10 +317,11 @@ while True:
             if ToriDB.checkStation(mac_adr):
                 ip_mac_dict[ip] = mac_adr
                 msg_ret = ServerProtocol.buildPublishPKeySE(public_key)
-                my_server.sendMsg(ip, msg_ret)
+                station_server.sendMsg(ip, msg_ret)
 
             else:
-                my_server.disconnect(ip)
+                print("NOT ALLOWED")
+                station_server.disconnect(ip)
         # check if the communication is permitted
         if ip in ip_mac_dict:
             # station sent pkey
@@ -263,20 +329,25 @@ while True:
                 station_pkey = msg.encode()
                 sym_key = roll_key()
                 msg_ret = ServerProtocol.buildSendSymetricKey(sym_key)
+                print("SYMKEY", sym_key)
                 # encrypt the symteric key with the station's public key
                 encrypted = RSAClass.encrypt_msg(msg_ret, station_pkey)
                 # send the symetric key
-                my_server.sendMsg(ip, encrypted)
+                station_server.sendMsg(ip, encrypted)
                 # add the key to the dictionary
                 ip_key_dict[ip] = AESClass.AESCipher(sym_key)
-                if len(ip_key_dict) >= station_per_msg:
+                if len(ip_key_dict) >= station_per_msg and not initialized_proxy:
+                    initialized_proxy = True
                     threading.Thread(target=proxy).start()
+
         else:
             # if the communication is not permitted , kick the ip off the server
-            my_server.disconnect(ip)
+            station_server.disconnect(ip)
     else:
          # put back in the queue
-         q.put((ip, data))
+         station_server_q.put((ip, data))
+
+
 
 
 

@@ -111,29 +111,18 @@ def unpack(msg):
         data = msg[1:length+1]
 
     elif code == "10":
-        # extract first IP
-        lenIP1 = int(msg[:2])
-        IP1 = msg[2: lenIP1+2]
-        msg = msg[lenIP1+2:]
-
-        # extract first IP
-        lenIP2 = int(msg[:2])
-        IP2 = msg[2: lenIP2 + 2]
-        msg = msg[lenIP2 + 2:]
-
-        # extract number of stations per msg
-        stations_per_msg = int(msg[:1])
+        # extract stations per msg argument
+        station_per_msg = msg[0]
         msg = msg[1:]
 
-        # extract mac addresses of stations
         station_list = []
-        for i in range(stations_per_msg):
-            station_list.append(msg[0:17])
+        # get all the lists
+        while msg != "":
+            station_list.append(msg[:17])
             msg = msg[17:]
 
-        # extract port number
-        port = msg[0:5]
-        data = (IP1, IP2, station_list, port)
+        # organize the data
+        data = (station_per_msg, station_list)
 
     elif code == "15":
         data = msg
@@ -146,9 +135,8 @@ def main():
     # username = "admin"
     # password = "admin123"
     # print(buildSendUserAndPassword(username, password))
-    mac = "ff:ee:dd:cc:bb:aa"
-    print(buildAddStationMsg(mac))
-    print(buildDeleteStationMsg(mac))
+    msg = "105ff:e6:1f:21:a5:b0ff:e6:1f:21:a5:b1ff:e6:1f:21:a5:b2"
+    print(unpack(msg))
     # num_of_stations = 3
     # print(buildChNumOfStations(num_of_stations))
     # msg = "094True"

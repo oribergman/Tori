@@ -76,33 +76,23 @@ def buildLoginMsg(isTrue):
     return msg
 
 
-def buildRealTimeInfo(msgfrom, msgto, stations, port):
-    """
+def buildStationInfo(stations_per_msg, stations):
+   """
 
-    :param msgfrom: IP address of client
-    :param msgto: IP address of the site
-    :param stations: list of MAC addresses of the stations
-    :param port: the port the server handles the msg with
-    :return: a msg built by the protocol to send back to manager real time info
-    """
+   :param stations_per_msg: the station per msg
+   :param stations: all the stations
+   :return: msg build by the protocol to give info for the manager about the stations
+   """
 
-    code = "10"
+   code = "10"
 
-    lenIP1 = str(len(msgfrom)).zfill(2)
-    lenIP2 = str(len(msgto)).zfill(2)
+   msg = code + str(stations_per_msg)
 
-    station_per_msg = len(stations)
+   # add the stations's mac to msg
+   for mac in stations:
+       msg += mac
 
-    msg = code + lenIP1 + msgfrom + lenIP2 + msgto + str(station_per_msg)
-    # add the MAC of the statinos to the msg
-    for MAC in stations:
-        msg += MAC
-
-    port = str(port).zfill(5)
-
-    msg += port
-
-    return msg
+   return msg
 
 
 def buildSendCurrentNum(num):
@@ -178,7 +168,9 @@ def main():
 #    lastIP = "193.2.2.30"
 #     msg = "xdxdxdxdxdxdolololololololoololololololololololololololoololool"
 #     print(buildSendMsg(msg, firstIP, lastIP))
-#    stations = ["ff:e6:1f:21:a5:b0","ff:e6:1f:21:a5:b1","ff:e6:1f:21:a5:b2"]
+    station_per_msg = 5
+    stations = ["ff:e6:1f:21:a5:b0","ff:e6:1f:21:a5:b1","ff:e6:1f:21:a5:b2"]
+    print(buildStationInfo(station_per_msg, stations))
 #    print(buildRealTimeInfo(firstIP, lastIP, stations, port))
 #     msg = "00ff:ee:dd:cc:bb:aa"
 #     msg = """0200000624-----BEGIN PUBLIC KEY-----

@@ -197,6 +197,11 @@ def manager_comms(manager_server_q, manager_server):
                 ip_key_dict[ip] = ip_key_dict_temp[ip]
                 del ip_key_dict_temp[ip]
 
+                # send the client the info
+                msg_ret = ServerProtocol.buildStationInfo(station_per_msg, ToriDB.send_stations())
+                enc_msg = ip_key_dict[ip].encrypt(msg_ret)
+                manager_server.sendMsg(ip, enc_msg)
+
             else:
                 # return the manager False
                 msg_ret = ServerProtocol.buildLoginMsg("False")
@@ -216,12 +221,12 @@ def manager_comms(manager_server_q, manager_server):
         elif code == "13":
             station_per_msg = msg
 
-        # manager asks for current number of station per msg
-        elif code == "14":
-            # send the current number
-            msg_ret = ServerProtocol.buildSendCurrentNum(station_per_msg)
-            enc_msg = ip_key_dict[ip].encrypt(msg_ret)
-            manager_server.sendMsg(ip, enc_msg)
+        # # manager asks for current number of station per msg
+        # elif code == "14":
+        #     # send the current number
+        #     msg_ret = ServerProtocol.buildSendCurrentNum(station_per_msg)
+        #     enc_msg = ip_key_dict[ip].encrypt(msg_ret)
+        #     manager_server.sendMsg(ip, enc_msg)
 
 
 def roll_port():

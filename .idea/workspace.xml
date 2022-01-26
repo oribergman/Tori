@@ -2,28 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="42ec9138-1996-4ec5-a840-09d33fc5df72" name="Default Changelist" comment="All works, missing RealTimeInfo mangment">
-      <change afterPath="$PROJECT_DIR$/.idea/.name" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/Tori - E.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ToriIcon.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ToriLogo.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/back.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Tori.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Tori.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AESClass.py" beforeDir="false" afterPath="$PROJECT_DIR$/AESClass.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ManagerProtocol.py" beforeDir="false" afterPath="$PROJECT_DIR$/ManagerProtocol.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/OnionServer.py" beforeDir="false" afterPath="$PROJECT_DIR$/OnionServer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/OnionStation.py" beforeDir="false" afterPath="$PROJECT_DIR$/OnionStation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ProxyComs.py" beforeDir="false" afterPath="$PROJECT_DIR$/ProxyComs.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ServerComs.py" beforeDir="false" afterPath="$PROJECT_DIR$/ServerComs.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ServerProtocol.py" beforeDir="false" afterPath="$PROJECT_DIR$/ServerProtocol.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StationComs.py" beforeDir="false" afterPath="$PROJECT_DIR$/StationComs.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StationProtocol.py" beforeDir="false" afterPath="$PROJECT_DIR$/StationProtocol.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ToriDB" beforeDir="false" afterPath="$PROJECT_DIR$/ToriDB" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/server.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/station.py" beforeDir="false" afterPath="$PROJECT_DIR$/station.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -33,25 +12,16 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/ManagerProtocol.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3036">
-              <caret line="138" column="18" selection-start-line="138" selection-start-column="18" selection-end-line="138" selection-end-column="18" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/server.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="413">
-              <caret line="227" column="7" lean-forward="true" selection-start-line="227" selection-start-column="7" selection-end-line="227" selection-end-column="7" />
+            <state relative-caret-position="127">
+              <caret line="214" column="7" selection-start-line="214" selection-start-column="7" selection-end-line="214" selection-end-column="7" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/StationComs.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="88">
@@ -164,6 +134,11 @@
     </replaceStrings>
   </component>
   <component name="Git.Settings">
+    <option name="PREVIOUS_COMMIT_AUTHORS">
+      <list>
+        <option value="ori bergman &lt;oribergman10@gmail.com&gt;" />
+      </list>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="IdeDocumentHistory">
@@ -374,7 +349,24 @@
       <option name="presentableId" value="Default" />
       <updated>1638197683024</updated>
     </task>
+    <task id="LOCAL-00001" summary="All works, missing RealTimeInfo mangment">
+      <created>1643120785532</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1643120785533</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
+  </component>
+  <component name="TodoView" selected-index="4">
+    <todo-panel id="selected-file">
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+    <todo-panel id="all">
+      <are-packages-shown value="true" />
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
@@ -388,8 +380,8 @@
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="TODO" order="6" visible="true" weight="0.32912722" />
-      <window_info anchor="bottom" id="Version Control" order="7" />
+      <window_info anchor="bottom" id="TODO" order="6" weight="0.32912722" />
+      <window_info anchor="bottom" id="Version Control" order="7" weight="0.32912722" />
       <window_info anchor="bottom" id="Event Log" order="8" sideWeight="0.50105375" side_tool="true" weight="0.340694" />
       <window_info anchor="bottom" id="Terminal" order="9" weight="0.32936078" />
       <window_info anchor="bottom" id="Python Console" order="10" />
@@ -416,6 +408,32 @@
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
     </layout-to-restore>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="RECENTLY_FILTERED_USER_GROUPS">
+                <collection />
+              </option>
+              <option name="RECENTLY_FILTERED_BRANCH_GROUPS">
+                <collection />
+              </option>
+              <option name="COLUMN_ORDER">
+                <list>
+                  <option value="0" />
+                  <option value="1" />
+                  <option value="2" />
+                  <option value="3" />
+                </list>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="All works, missing RealTimeInfo mangment" />
@@ -446,9 +464,6 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/.idea/Tori.iml">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/.idea/workspace.xml">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/client.py" />
@@ -603,12 +618,8 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/server.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="413">
-          <caret line="227" column="7" lean-forward="true" selection-start-line="227" selection-start-column="7" selection-end-line="227" selection-end-column="7" />
-        </state>
-      </provider>
+    <entry file="file://$PROJECT_DIR$/.idea/workspace.xml">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/StationComs.py">
       <provider selected="true" editor-type-id="text-editor">
@@ -617,6 +628,13 @@
           <folding>
             <element signature="e#0#13#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/server.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="127">
+          <caret line="214" column="7" selection-start-line="214" selection-start-column="7" selection-end-line="214" selection-end-column="7" />
         </state>
       </provider>
     </entry>

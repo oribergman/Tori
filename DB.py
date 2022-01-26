@@ -151,9 +151,24 @@ class DB(object):
                 self.cursor.execute(f"UPDATE {self.adminTbl} SET password = '{new_password}' WHERE username='{username}';")
                 self.conn.commit()
 
+    def send_stations(self):
+        """
+
+        :return: sends a list with all the stations
+        """
+
+        self.cursor.execute(f"SELECT * FROM {self.stationTbl};")
+        data = self.cursor.fetchall()
+
+        stations = []
+        for tup in data:
+            stations.append(tup[0])
+        return stations
+
+
 def main():
-    pass
-    # myDB = DB("ToriDB")
+    myDB = DB("ToriDB")
+    print(myDB.send_stations())
     # station_mac = "ff:ee:dd:cc:bb:aa"
     # username = "namiko12345"
     # password = "passoword1234"

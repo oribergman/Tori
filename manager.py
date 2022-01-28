@@ -15,7 +15,6 @@ def exchange_keys(manager_client_q, manager_client):
     """
     global public_key, rsa_keys
     msg = ManagerProtocol.buildPublishPKeyMA(public_key.decode())
-    print(msg)
     manager_client.sendMsg(msg)
 
     # wait for response
@@ -72,8 +71,7 @@ def macValid(mac):
 
 class mainFrame(wx.Frame):
     def __init__(self, parent=None):
-        #super(mainFrame, self).__init__(parent, title="Tori", size=(wx.DisplaySize()))
-        wx.Frame.__init__(self, None,title="Tori", size=(wx.DisplaySize()))
+        super(mainFrame, self).__init__(parent, title="Tori", size=(1000,800))
         # create status bar
         self.CreateStatusBar(1)
 
@@ -103,10 +101,12 @@ class MainPanel(wx.Panel):
         self.login = LoginPanel(self, self.frame)
         self.main_menu = MainMenuPanel(self, self.frame)
         self.change_station = ChangeNumStationPanel(self, self.frame)
+        self.stations = StationsPanel(self, self.frame)
 
         v_box.Add(self.login)
         v_box.Add(self.main_menu)
         v_box.Add(self.change_station)
+        v_box.Add(self.stations)
 
         self.login.Show()
 
@@ -118,7 +118,7 @@ class LoginPanel(wx.Panel):
 
     def __init__(self, parent, frame):
         wx.Panel.__init__(self, parent, pos=wx.DefaultPosition,
-                          size=(wx.DisplaySize()),
+                          size=(1000,800),
                           style=wx.SIMPLE_BORDER)
 
         self.frame = frame
@@ -219,10 +219,12 @@ class LoginPanel(wx.Panel):
                 data = sym_key.decrypt(data)
                 code, msg = ManagerProtocol.unpack(data)
                 # code will be '10'
+                stations_per_msg = msg[0]
+                stations = msg[1]
 
-                # msg[0] = num of stations per msg
-                pub.sendMessage("current_changer", msg[0])
-
+                # send through pubsub
+                wx.CallAfter(pub.sendMessage,"current_changer", currentNum=stations_per_msg)
+                wx.CallAfter(pub.sendMessage,"fill_list", stations=stations)
 
             else:
                 wx.MessageBox("Wrong Username or Password", "Response", wx.OK)
@@ -232,7 +234,7 @@ class LoginPanel(wx.Panel):
 class MainMenuPanel(wx.Panel):
     def __init__(self, parent, frame):
         wx.Panel.__init__(self, parent, pos=wx.DefaultPosition,
-                          size=(wx.DisplaySize()),
+                          size=(1000,800),
                           style=wx.SIMPLE_BORDER)
 
         self.frame = frame
@@ -257,7 +259,10 @@ class MainMenuPanel(wx.Panel):
         optionsBox1 = wx.BoxSizer(wx.HORIZONTAL)
         # button of add station
         stationButton = wx.Button(self, wx.ID_ANY, label="Stations",
-        size = (300, 150))
+        size=(300, 150))
+
+        # bind the button
+        stationButton.Bind(wx.EVT_BUTTON, self.station_info_btn)
 
         # button of change the number of stations per msg
         changeNumButton = wx.Button(self, wx.ID_ANY, label= """Change Num of
@@ -288,6 +293,11 @@ class MainMenuPanel(wx.Panel):
         self.Layout()
         self.Hide()
 
+    def station_info_btn(self, event):
+        self.Hide()
+        self.frame.SetSize((500, 400))
+        self.parent.stations.Show()
+
     def change_num_stations(self, event):
         """
         the function of the ChangeNumStation button
@@ -297,10 +307,128 @@ class MainMenuPanel(wx.Panel):
         self.parent.change_station.Show()
 
 
+class StationsPanel(wx.Panel):
+    def __init__(self, parent, frame):
+        wx.Panel.__init__(self, parent, pos=wx.DefaultPosition,
+                          size=(500,400),
+                          style=wx.SIMPLE_BORDER)
+
+        self.frame = frame
+        self.parent = parent
+        self.SetBackgroundColour(wx.LIGHT_GREY)
+
+        # add back button
+        back_box = wx.BoxSizer(wx.HORIZONTAL)
+
+        # create img
+        backImg = wx.Image("back.png", wx.BITMAP_TYPE_ANY)
+        backImg.Rescale(50, 50)
+        # create bmp
+        backBmp = wx.Bitmap(backImg)
+        backBtn = wx.BitmapButton(self, wx.ID_ANY, bitmap=backBmp, size=wx.DefaultSize)
+        # set color of button
+        backBtn.SetBackgroundColour(wx.LIGHT_GREY)
+        # remove outline
+        backBtn.SetWindowStyleFlag(wx.NO_BORDER)
+        # bind the button
+        backBtn.Bind(wx.EVT_BUTTON, self.handle_back)
+
+        back_box.Add(backBtn, 0, wx.ALIGN_LEFT, 5)
+
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        self.listbox = wx.ListBox(self)
+
+        # subscribe with pub sub to fill the list
+        pub.subscribe(self.fill_list, "fill_list")
+
+        btnPanel = wx.Panel(self)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        addBtn = wx.Button(btnPanel, wx.ID_ANY, 'Add', size=(90, 30))
+        delBtn = wx.Button(btnPanel, wx.ID_ANY, 'Delete', size=(90, 30))
+
+        self.Bind(wx.EVT_BUTTON, self.NewStation, id=addBtn.GetId())
+        self.Bind(wx.EVT_BUTTON, self.OnDelete, id=delBtn.GetId())
+
+        vbox.Add((-1, 20))
+        vbox.Add(addBtn)
+        vbox.Add(delBtn, 0, wx.TOP, 5)
+        btnPanel.SetSizer(vbox)
+
+        hbox.Add(back_box, 0, wx.LEFT, 5)
+        hbox.AddSpacer(10)
+        hbox.Add(self.listbox, wx.ID_ANY, wx.EXPAND | wx.ALL, 20)
+        hbox.Add(btnPanel, 0.6, wx.EXPAND | wx.RIGHT, 20)
+        self.SetSizer(hbox)
+
+        self.Centre()
+        self.Layout()
+        self.Hide()
+
+    def NewStation(self, event):
+        """
+        triggers when the add button is pressed
+        :return: add a new station
+        """
+        global sym_key, manager_client, manager_client_q
+        mac = wx.GetTextFromUser('Enter a MAC', 'Insert MAC')
+
+        # if the mac is valid and there are no duplicates
+        if macValid(mac):
+            if mac not in self.listbox.GetStrings():
+                # append to list
+                self.listbox.Append(mac)
+                # tell the server to add the station
+                msg = ManagerProtocol.buildAddStationMsg(mac)
+                enc_msg = sym_key.encrypt(msg)
+                manager_client.sendMsg(enc_msg)
+            else:
+                wx.MessageBox("MAC already in list", "Error", wx.OK)
+        else:
+            wx.MessageBox("MAC address invalid", "Error", wx.OK)
+
+    def OnDelete(self, event):
+        """
+        triggers when delete in pressed
+        :return: deletes the chosen station
+        """
+        global sym_key, manager_client, manager_client_q
+        index = self.listbox.GetSelection()
+        if index != -1:
+            mac = self.listbox.GetString(index)
+            # deleting mac from table
+            self.listbox.Delete(index)
+            # telling server to delete mac
+            msg = ManagerProtocol.buildDeleteStationMsg(mac)
+            enc_msg = sym_key.encrypt(msg)
+            manager_client.sendMsg(enc_msg)
+
+        else:
+            wx.MessageBox("No MAC chosen", "Error", wx.OK)
+
+    def fill_list(self, stations):
+        """
+
+        :param stations: list of mac addresses of the stations
+        :return: fills the list
+        """
+        # add all the stations to list
+        for mac in stations:
+            self.listbox.Append(mac)
+
+    def handle_back(self, event):
+        """
+        triggers when the back button is pressed
+        :return: goes back to main menu
+        """
+        self.frame.SetSize((1000, 800))
+        self.Hide()
+        self.parent.main_menu.Show()
+
+
 class ChangeNumStationPanel(wx.Panel):
     def __init__(self, parent, frame):
         wx.Panel.__init__(self, parent, pos=wx.DefaultPosition,
-                          size=(wx.DisplaySize()),
+                          size=(1000,800),
                           style=wx.SIMPLE_BORDER)
 
         self.frame = frame
@@ -347,7 +475,7 @@ class ChangeNumStationPanel(wx.Panel):
 
         self.currentNum_Text = wx.StaticText(self, 1, label="")
 
-        currentNum_box.Add(self.currentNum_Text)
+        currentNum_box.Add(self.currentNum_Text, 0, wx.CENTER, 5)
 
         # subscribe to pubsub to know current num of station per message
         pub.subscribe(self.change_current, "current_changer")
@@ -370,13 +498,7 @@ class ChangeNumStationPanel(wx.Panel):
         # bind the button
         changeBtn.Bind(wx.EVT_BUTTON, self.handle_change)
 
-        # # button for knowing how many stations per msg currently
-        # askBtn = wx.Button(self, wx.ID_ANY, label="Current number?",  size=(200, 60))
-        # # bind the button
-        # askBtn.Bind(wx.EVT_BUTTON, self.handle_ask)
-
         changeBox.Add(changeBtn, 0, wx.ALL, 5)
-        # changeBox.Add(askBtn, 0, wx.ALL, 5)
 
         # add all to sizer
         sizer.Add(back_box, 0, wx.LEFT, 5)
@@ -449,6 +571,10 @@ class ChangeNumStationPanel(wx.Panel):
         wx.MessageBox("Currently there are " + num_of_stations + " per message", "Response", wx.OK)
 
     def handle_back(self, event):
+        """
+       triggers when the back button is pressed
+       :return: goes back to main menu
+       """
         self.Hide()
         self.parent.main_menu.Show()
 
@@ -457,6 +583,6 @@ if __name__ == '__main__':
     rsa_keys = RSAClass.RSAClass()
     public_key = rsa_keys.get_public_key_pem()
     first_login = True
-    app = wx.App(False)
+    app = wx.App()
     first_Frame = mainFrame()
     app.MainLoop()

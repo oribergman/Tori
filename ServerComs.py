@@ -123,7 +123,6 @@ def main():
     myQ = queue.Queue()
     server = ServerComs(5918, myQ)
     data = myQ.get()
-    print(data)
     server.sendMsg(data[0], data[1])
 
 

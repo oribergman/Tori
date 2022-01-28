@@ -38,7 +38,7 @@ def buildAddStationMsg(mac):
 
     code = "11"
 
-    msg = code + mac
+    msg = code + str(mac)
 
     return msg
 
@@ -52,7 +52,7 @@ def buildDeleteStationMsg(mac):
 
     code = "12"
 
-    msg = code + mac
+    msg = code + str(mac)
 
     return msg
 

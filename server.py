@@ -80,11 +80,11 @@ def proxy():
     while True:
         if not proxy_queue.empty():
             # extract a msg
-            client_port, msg = proxy_queue.get()
+            client_ip, msg = proxy_queue.get()
             msg = msg.decode()
             # if its a GET request
             if len(msg) == 0:
-                proxy_server.disconnect(client_port)
+                proxy_server.disconnect(client_ip)
 
             if msg.startswith("GET"):
                 print("LEN OF MSG", len(msg))
@@ -126,20 +126,20 @@ def proxy():
                             received_ok = True
                             print("GOT OK FROM", ip)
                 # after the stations servers are up save the data on the msg
-                port_dict[chosen_port] = (client_port, dst_ip, stations_for_msg)
+                port_dict[chosen_port] = (client_ip, dst_ip, stations_for_msg)
                 # open the code that sends the msg
-                threading.Thread(target=handle_send_receive_msg, args=(msg, port, client_port, dst_ip, stations_for_msg, ret_msg_queue)).start()
+                threading.Thread(target=handle_send_receive_msg, args=(msg, port, client_ip, dst_ip, stations_for_msg, ret_msg_queue)).start()
 
         # if there is a msg to send back
         if not ret_msg_queue.empty():
             # get  the ip and the msg to return
             (clientIP, msg) = ret_msg_queue.get()
             print(len(msg))
-            print("CLIENT PORT - ", client_port, "RETMSG- ", msg)
+            print("CLIENT ip - ", client_ip, "RETMSG- ", msg)
             # return the msg to the client
-            proxy_server.sendMsg(client_port, msg)
+            proxy_server.sendMsg(client_ip, msg)
             # disconnect the client
-            proxy_server.disconnect(client_port)
+            proxy_server.disconnect(client_ip)
 
 
 def manager_comms(manager_server_q, manager_server):

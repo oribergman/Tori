@@ -337,7 +337,6 @@ class StationsPanel(wx.Panel):
 
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         self.listbox = wx.ListBox(self)
-
         # subscribe with pub sub to fill the list
         pub.subscribe(self.fill_list, "fill_list")
 
@@ -414,6 +413,8 @@ class StationsPanel(wx.Panel):
         # add all the stations to list
         for mac in stations:
             self.listbox.Append(mac)
+
+        self.Layout()
 
     def handle_back(self, event):
         """
@@ -546,6 +547,7 @@ class ChangeNumStationPanel(wx.Panel):
         """
 
         self.currentNum_Text.SetLabel("Current number of station per message: " + currentNum)
+        self.Layout()
 
     def handle_ask(self, event):
         global sym_key, manager_client, manager_client_q

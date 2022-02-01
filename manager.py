@@ -1,6 +1,7 @@
 import wx
 import queue
 import os
+import threading
 import RSAClass
 import ManagerProtocol
 import AESClass
@@ -12,14 +13,13 @@ except:
     import pubsub.pub as pub
 
 
-
-def exchange_keys(manager_client_q, manager_client):
+def exchange_keys(manager_client_q, manager_client, rsa_keys):
     """
 
     :param manager_client: the StationComs of the manager client
     :return: exchanges keys
     """
-    global public_key, rsa_keys
+    public_key = rsa_keys.get_public_key_pem()
     msg = ManagerProtocol.buildPublishPKeyMA(public_key.decode())
     manager_client.sendMsg(msg)
 
@@ -76,10 +76,13 @@ def macValid(mac):
 
 
 class mainFrame(wx.Frame):
-    def __init__(self, parent=None):
+    def __init__(self, sym_key, manager_client, parent=None):
         super(mainFrame, self).__init__(parent, title="Tori", size=(1000,800) ,style = wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX ^ wx.RESIZE_BORDER)
         # create status bar
         self.CreateStatusBar(1)
+
+        self.sym_key = sym_key
+        self.com = manager_client
 
         main_panel = MainPanel(self)
         box = wx.BoxSizer(wx.VERTICAL)
@@ -178,12 +181,26 @@ class LoginPanel(wx.Panel):
         sizer.AddSpacer(30)
         sizer.Add(btnBox, wx.CENTER | wx.ALL, 5)
 
+
+        pub.subscribe(self.handle_login_ans, 'login_ans')
+
         self.SetSizer(sizer)
         self.Layout()
         self.Show()
 
+    def handle_login_ans(self, status):
+        if status == False:
+            wx.MessageBox("Wrong Username or Password", "Response", wx.OK)
+        else:
+            print("ok")
+            # login successfully
+
+            # move to menu screen
+            self.frame.SetStatusText("")
+            self.Hide()
+            self.parent.main_menu.Show()
+
     def handle_login(self, event):
-        global public_key, first_login, sym_key, manager_client, manager_client_q
         # extract username and password
         username = self.userField.GetValue()
         password = self.passField.GetValue()
@@ -198,42 +215,36 @@ class LoginPanel(wx.Panel):
         # checking with server if user and password correct
         else:
             self.frame.SetStatusText("Checking with server...")
-            # create client
-            if first_login:
-                manager_client_q = queue.Queue()
-                manager_client = StationComs.StationComs(2028, "127.0.0.1", manager_client_q)
-                # exchange keys
-                sym_key = exchange_keys(manager_client_q, manager_client)
 
             # send username and password
             msg = ManagerProtocol.buildSendUserAndPassword(username, password)
-            enc_msg = sym_key.encrypt(msg)
-            manager_client.sendMsg(enc_msg)
-            Correct = isLoginCorrect(manager_client_q, sym_key)
-            # login successfully
-            if str(Correct) == "True":
-                # move to menu screen
-                self.frame.SetStatusText("")
-                self.Hide()
-                self.parent.main_menu.Show()
+            enc_msg = self.frame.sym_key.encrypt(msg)
+            self.frame.com.sendMsg(enc_msg)
+            # Correct = isLoginCorrect(manager_client_q, sym_key)
+            # # login successfully
+            # if str(Correct) == "True":
+            #     # move to menu screen
+            #     self.frame.SetStatusText("")
+            #     self.Hide()
+            #     self.parent.main_menu.Show()
+            #
+            #     # get the list of all the stations and the number of stations per msg
+            #     # wait for response
+            #     data = manager_client_q.get()
+            #     # decrypt rsa response from server
+            #     data = sym_key.decrypt(data)
+            #     code, msg = ManagerProtocol.unpack(data)
+            #     # code will be '10'
+            #     stations_per_msg = msg[0]
+            #     stations = msg[1]
+            #
+            #     # send through pubsub
+            #     wx.CallAfter(pub.sendMessage, "current_changer", currentNum=stations_per_msg)
+            #     wx.CallAfter(pub.sendMessage, "fill_list", stations=stations)
+            #
+            # else:
+            #     wx.MessageBox("Wrong Username or Password", "Response", wx.OK)
 
-                # get the list of all the stations and the number of stations per msg
-                # wait for response
-                data = manager_client_q.get()
-                # decrypt rsa response from server
-                data = sym_key.decrypt(data)
-                code, msg = ManagerProtocol.unpack(data)
-                # code will be '10'
-                stations_per_msg = msg[0]
-                stations = msg[1]
-
-                # send through pubsub
-                wx.CallAfter(pub.sendMessage, "current_changer", currentNum=stations_per_msg)
-                wx.CallAfter(pub.sendMessage, "fill_list", stations=stations)
-
-            else:
-                wx.MessageBox("Wrong Username or Password", "Response", wx.OK)
-                first_login = False
 
 
 class MainMenuPanel(wx.Panel):
@@ -409,7 +420,6 @@ class StationsPanel(wx.Panel):
         triggers when the add button is pressed
         :return: add a new station
         """
-        global sym_key, manager_client, manager_client_q
         mac = wx.GetTextFromUser('Enter a MAC', 'Insert MAC')
 
         # if the mac is valid and there are no duplicates
@@ -419,8 +429,8 @@ class StationsPanel(wx.Panel):
                 self.listbox.Append(mac)
                 # tell the server to add the station
                 msg = ManagerProtocol.buildAddStationMsg(mac)
-                enc_msg = sym_key.encrypt(msg)
-                manager_client.sendMsg(enc_msg)
+                enc_msg = self.frame.sym_key.encrypt(msg)
+                self.frame.com.sendMsg(enc_msg)
             else:
                 wx.MessageBox("MAC already in list", "Error", wx.OK)
         else:
@@ -431,7 +441,6 @@ class StationsPanel(wx.Panel):
         triggers when delete in pressed
         :return: deletes the chosen station
         """
-        global sym_key, manager_client, manager_client_q
         index = self.listbox.GetSelection()
         if index != -1:
             mac = self.listbox.GetString(index)
@@ -439,8 +448,8 @@ class StationsPanel(wx.Panel):
             self.listbox.Delete(index)
             # telling server to delete mac
             msg = ManagerProtocol.buildDeleteStationMsg(mac)
-            enc_msg = sym_key.encrypt(msg)
-            manager_client.sendMsg(enc_msg)
+            enc_msg = self.frame.sym_key.encrypt(msg)
+            self.frame.com.sendMsg(enc_msg)
 
         else:
             wx.MessageBox("No MAC chosen", "Error", wx.OK)
@@ -594,7 +603,6 @@ class ChangeNumStationPanel(wx.Panel):
         self.Layout()
 
     def handle_ask(self, event):
-        global sym_key, manager_client, manager_client_q
         """
         triggers when the "Current number?" button is clicked 
         :return: asks the server for the Current number of station per msg and presents it
@@ -625,10 +633,33 @@ class ChangeNumStationPanel(wx.Panel):
         self.parent.main_menu.Show()
 
 
+def manager_logic(recv_q, sym_key):
+    while True:
+        data = recv_q.get()
+        data = sym_key.decrypt(data)
+        code, msg = ManagerProtocol.unpack(data)
+        if code == '9':
+            wx.CallAfter(pub.sendMessage, "login_ans", status=msg)
+
+        elif code == '10':
+            # code will be '10'
+            stations_per_msg = msg[0]
+            stations = msg[1]
+            # send through pubsub
+            wx.CallAfter(pub.sendMessage, "current_changer", currentNum=stations_per_msg)
+            wx.CallAfter(pub.sendMessage, "fill_list", stations=stations)
+
+
 if __name__ == '__main__':
     rsa_keys = RSAClass.RSAClass()
+    manager_client_q = queue.Queue()
+    manager_client = StationComs.StationComs(2028, "127.0.0.1", manager_client_q)
+    # exchange keys
+    sym_key = exchange_keys(manager_client_q, manager_client, rsa_keys)
+    threading.Thread(target=manager_logic, args=(manager_client_q, sym_key, )).start()
+
     public_key = rsa_keys.get_public_key_pem()
     first_login = True
     app = wx.App()
-    first_Frame = mainFrame()
+    first_Frame = mainFrame(sym_key= sym_key, manager_client= manager_client)
     app.MainLoop()

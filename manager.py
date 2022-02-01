@@ -1,10 +1,16 @@
 import wx
 import queue
+import os
 import RSAClass
 import ManagerProtocol
 import AESClass
 import StationComs
-import pubsub.pub as pub
+try:
+    import pubsub.pub as pub
+except:
+    os.system("pip install pypubsub")
+    import pubsub.pub as pub
+
 
 
 def exchange_keys(manager_client_q, manager_client):
@@ -71,7 +77,7 @@ def macValid(mac):
 
 class mainFrame(wx.Frame):
     def __init__(self, parent=None):
-        super(mainFrame, self).__init__(parent, title="Tori", size=(1000,800))
+        super(mainFrame, self).__init__(parent, title="Tori", size=(1000,800) ,style = wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX ^ wx.RESIZE_BORDER)
         # create status bar
         self.CreateStatusBar(1)
 
@@ -90,7 +96,7 @@ class mainFrame(wx.Frame):
 
 class MainPanel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+        wx.Panel.__init__(self, parent,size=(1000,800))
 
         self.frame = parent
         self.SetBackgroundColour(wx.LIGHT_GREY)
@@ -103,10 +109,10 @@ class MainPanel(wx.Panel):
         self.change_station = ChangeNumStationPanel(self, self.frame)
         self.stations = StationsPanel(self, self.frame)
 
-        v_box.Add(self.login)
-        v_box.Add(self.main_menu)
-        v_box.Add(self.change_station)
-        v_box.Add(self.stations)
+        v_box.Add(self.login,0,wx.EXPAND,0)
+        v_box.Add(self.main_menu,0,wx.EXPAND,0)
+        v_box.Add(self.change_station,0,wx.EXPAND,0)
+        v_box.Add(self.stations,0,wx.EXPAND,0)
 
         self.login.Show()
 
@@ -118,8 +124,7 @@ class LoginPanel(wx.Panel):
 
     def __init__(self, parent, frame):
         wx.Panel.__init__(self, parent, pos=wx.DefaultPosition,
-                          size=(1000,800),
-                          style=wx.SIMPLE_BORDER)
+                          size=(1000,800), style=wx.SIMPLE_BORDER)
 
         self.frame = frame
         self.parent = parent
@@ -223,8 +228,8 @@ class LoginPanel(wx.Panel):
                 stations = msg[1]
 
                 # send through pubsub
-                wx.CallAfter(pub.sendMessage,"current_changer", currentNum=stations_per_msg)
-                wx.CallAfter(pub.sendMessage,"fill_list", stations=stations)
+                wx.CallAfter(pub.sendMessage, "current_changer", currentNum=stations_per_msg)
+                wx.CallAfter(pub.sendMessage, "fill_list", stations=stations)
 
             else:
                 wx.MessageBox("Wrong Username or Password", "Response", wx.OK)
@@ -295,7 +300,6 @@ class MainMenuPanel(wx.Panel):
 
     def station_info_btn(self, event):
         self.Hide()
-        self.frame.SetSize((500, 400))
         self.parent.stations.Show()
 
     def change_num_stations(self, event):
@@ -309,20 +313,22 @@ class MainMenuPanel(wx.Panel):
 
 class StationsPanel(wx.Panel):
     def __init__(self, parent, frame):
-        wx.Panel.__init__(self, parent, pos=wx.DefaultPosition,
-                          size=(500,400),
-                          style=wx.SIMPLE_BORDER)
+        wx.Panel.__init__(self, parent, pos=wx.DefaultPosition, size=(1000,800),
+
+        style=wx.SIMPLE_BORDER)
 
         self.frame = frame
         self.parent = parent
         self.SetBackgroundColour(wx.LIGHT_GREY)
+
+        mainSizer = wx.BoxSizer(wx.VERTICAL)
 
         # add back button
         back_box = wx.BoxSizer(wx.HORIZONTAL)
 
         # create img
         backImg = wx.Image("back.png", wx.BITMAP_TYPE_ANY)
-        backImg.Rescale(50, 50)
+        backImg.Rescale(100, 100)
         # create bmp
         backBmp = wx.Bitmap(backImg)
         backBtn = wx.BitmapButton(self, wx.ID_ANY, bitmap=backBmp, size=wx.DefaultSize)
@@ -335,12 +341,39 @@ class StationsPanel(wx.Panel):
 
         back_box.Add(backBtn, 0, wx.ALIGN_LEFT, 5)
 
+        # add image logo title
+        title_image_box = wx.BoxSizer(wx.HORIZONTAL)
+
+        # adding the logo picture
+        logo_bmp = wx.Image("ToriLogo.png", wx.BITMAP_TYPE_ANY)
+        logo_bmp.Rescale(400, 200)
+
+        Image = wx.StaticBitmap(self, bitmap=wx.Bitmap(400, 200))
+        Image.SetBitmap(wx.Bitmap(logo_bmp))
+
+        title_image_box.Add(Image, 0, wx.ALIGN_CENTER, 5)
+
+        # creating the small panel
+        self.smallPanel = wx.Panel(self, size=(400, 400), style = wx.SIMPLE_BORDER)
+
+        # sizer for small panel
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        self.listbox = wx.ListBox(self)
+        self.listbox = wx.ListBox(self.smallPanel)
         # subscribe with pub sub to fill the list
         pub.subscribe(self.fill_list, "fill_list")
 
-        btnPanel = wx.Panel(self)
+        # title box
+        title_box = wx.BoxSizer(wx.HORIZONTAL)
+
+        title_Text = wx.StaticText(self.smallPanel, 0, label="Stations MAC list:")
+        # creating font
+        font = wx.Font(9, wx.FONTFAMILY_ROMAN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+        title_Text.SetFont(font)
+
+        title_box.Add(title_Text, 0, wx.LEFT, 5)
+
+        # creating the button panel
+        btnPanel = wx.Panel(self.smallPanel)
         vbox = wx.BoxSizer(wx.VERTICAL)
         addBtn = wx.Button(btnPanel, wx.ID_ANY, 'Add', size=(90, 30))
         delBtn = wx.Button(btnPanel, wx.ID_ANY, 'Delete', size=(90, 30))
@@ -353,13 +386,21 @@ class StationsPanel(wx.Panel):
         vbox.Add(delBtn, 0, wx.TOP, 5)
         btnPanel.SetSizer(vbox)
 
-        hbox.Add(back_box, 0, wx.LEFT, 5)
+        hbox.Add(title_box, 0, wx.LEFT, 5)
         hbox.AddSpacer(10)
         hbox.Add(self.listbox, wx.ID_ANY, wx.EXPAND | wx.ALL, 20)
         hbox.Add(btnPanel, 0.6, wx.EXPAND | wx.RIGHT, 20)
-        self.SetSizer(hbox)
 
-        self.Centre()
+        self.smallPanel.Centre()
+        self.smallPanel.SetSizer(hbox)
+        self.smallPanel.Layout()
+
+        mainSizer.Add(back_box, 0, wx.LEFT, 5)
+        mainSizer.Add(title_image_box, 0, wx.CENTER|wx.TOP, 5)
+        mainSizer.AddSpacer(10)
+        mainSizer.Add(self.smallPanel, 0, wx.CENTER,5)
+
+        self.SetSizer(mainSizer)
         self.Layout()
         self.Hide()
 
@@ -414,7 +455,10 @@ class StationsPanel(wx.Panel):
         for mac in stations:
             self.listbox.Append(mac)
 
+        #if not self.Hide():
         self.Layout()
+
+
 
     def handle_back(self, event):
         """

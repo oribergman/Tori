@@ -80,11 +80,11 @@ def proxy():
     while True:
         if not proxy_queue.empty():
             # extract a msg
-            client_ip, msg = proxy_queue.get()
+            client_address, msg = proxy_queue.get()
             msg = msg.decode()
             # if its a GET request
             if len(msg) == 0:
-                proxy_server.disconnect(client_ip)
+                proxy_server.disconnect(client_address)
 
             if msg.startswith("GET"):
                 print("LEN OF MSG", len(msg))
@@ -126,20 +126,20 @@ def proxy():
                             received_ok = True
                             print("GOT OK FROM", ip)
                 # after the stations servers are up save the data on the msg
-                port_dict[chosen_port] = (client_ip, dst_ip, stations_for_msg)
+                port_dict[chosen_port] = (client_address, dst_ip, stations_for_msg)
                 # open the code that sends the msg
-                threading.Thread(target=handle_send_receive_msg, args=(msg, port, client_ip, dst_ip, stations_for_msg, ret_msg_queue)).start()
+                threading.Thread(target=handle_send_receive_msg, args=(msg, port, client_address, dst_ip, stations_for_msg, ret_msg_queue)).start()
 
         # if there is a msg to send back
         if not ret_msg_queue.empty():
             # get  the ip and the msg to return
             (clientIP, msg) = ret_msg_queue.get()
             print(len(msg))
-            print("CLIENT ip - ", client_ip, "RETMSG- ", msg)
+            print("CLIENT ip - ", client_address, "RETMSG- ", msg)
             # return the msg to the client
-            proxy_server.sendMsg(client_ip, msg)
+            proxy_server.sendMsg(client_address, msg)
             # disconnect the client
-            proxy_server.disconnect(client_ip)
+            proxy_server.disconnect(client_address)
 
 
 def manager_comms(manager_server_q, manager_server):
@@ -159,11 +159,11 @@ def manager_comms(manager_server_q, manager_server):
             data = ip_key_dict_temp[ip].decrypt(data)
 
         # check if encrypted with sym_key after logging in
-        elif ip in ip_key_dict.keys():
+        elif ip in ip_key_dict_manager.keys():
             try:
-                data = ip_key_dict[ip].decrypt(data)
+                data = ip_key_dict_manager[ip].decrypt(data)
             except:
-                del ip_key_dict[ip]
+                del ip_key_dict_manager[ip]
 
         code, msg = ServerProtocol.unpack(data)
 
@@ -194,12 +194,12 @@ def manager_comms(manager_server_q, manager_server):
                 manager_server.sendMsg(ip, msg_ret)
 
                 # delete from temp dict and move to normal dict
-                ip_key_dict[ip] = ip_key_dict_temp[ip]
+                ip_key_dict_manager[ip] = ip_key_dict_temp[ip]
                 del ip_key_dict_temp[ip]
 
                 # send the client the info
                 msg_ret = ServerProtocol.buildStationInfo(station_per_msg, ToriDB.send_stations())
-                enc_msg = ip_key_dict[ip].encrypt(msg_ret)
+                enc_msg = ip_key_dict_manager[ip].encrypt(msg_ret)
                 manager_server.sendMsg(ip, enc_msg)
 
             else:
@@ -284,6 +284,7 @@ def roll_stations():
 station_server_q = queue.Queue()
 station_server = ServerComs.ServerComs(59185, station_server_q)
 
+
 # creating a server for comms with manager
 manager_server_q = queue.Queue()
 manager_server = ServerComs.ServerComs(2028, manager_server_q)
@@ -291,6 +292,7 @@ manager_server = ServerComs.ServerComs(2028, manager_server_q)
 threading.Thread(target=manager_comms, args=(manager_server_q, manager_server)).start()
 
 ip_key_dict_temp = {}
+ip_key_dict_manager = {}
 ip_key_dict = {} # ip : key
 ip_mac_dict = {}
 symkey_list = [] # list of all sym keys
@@ -312,6 +314,7 @@ initialized_proxy = False
 while True:
     # server for connection and change in keys with stations
     ip, data = station_server_q.get()
+
     # if the ip hasn't connected yet
     if not ip in list(ip_key_dict.keys()):
         code, msg = ServerProtocol.unpack(data)

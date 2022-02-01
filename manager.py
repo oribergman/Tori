@@ -35,21 +35,6 @@ def exchange_keys(manager_client_q, manager_client, rsa_keys):
     return sym_key
 
 
-def isLoginCorrect(manager_client_q, sym_key):
-    """
-
-    :param manager_client_q: the queue of the client's msgs
-    :return: the server's answer about the login
-    """
-
-    data = manager_client_q.get()
-    data = sym_key.decrypt(data)
-    code, msg = ManagerProtocol.unpack(data)
-
-    # code will be '9' for sure
-    return msg
-
-
 def macValid(mac):
     """
 
@@ -181,7 +166,6 @@ class LoginPanel(wx.Panel):
         sizer.AddSpacer(30)
         sizer.Add(btnBox, wx.CENTER | wx.ALL, 5)
 
-
         pub.subscribe(self.handle_login_ans, 'login_ans')
 
         self.SetSizer(sizer)
@@ -189,18 +173,27 @@ class LoginPanel(wx.Panel):
         self.Show()
 
     def handle_login_ans(self, status):
-        if status == False:
+        """
+
+        :param status: the answer for the server for the login
+        :return: handles the login answer
+        """
+        # if the password and the username doesn't match
+        if not status:
+            # present a msg
             wx.MessageBox("Wrong Username or Password", "Response", wx.OK)
         else:
-            print("ok")
-            # login successfully
-
             # move to menu screen
             self.frame.SetStatusText("")
             self.Hide()
             self.parent.main_menu.Show()
 
     def handle_login(self, event):
+        """
+
+        :return: extracts the username and password from the fields upon pressing "login" and sends to server
+        """
+
         # extract username and password
         username = self.userField.GetValue()
         password = self.passField.GetValue()
@@ -220,37 +213,12 @@ class LoginPanel(wx.Panel):
             msg = ManagerProtocol.buildSendUserAndPassword(username, password)
             enc_msg = self.frame.sym_key.encrypt(msg)
             self.frame.com.sendMsg(enc_msg)
-            # Correct = isLoginCorrect(manager_client_q, sym_key)
-            # # login successfully
-            # if str(Correct) == "True":
-            #     # move to menu screen
-            #     self.frame.SetStatusText("")
-            #     self.Hide()
-            #     self.parent.main_menu.Show()
-            #
-            #     # get the list of all the stations and the number of stations per msg
-            #     # wait for response
-            #     data = manager_client_q.get()
-            #     # decrypt rsa response from server
-            #     data = sym_key.decrypt(data)
-            #     code, msg = ManagerProtocol.unpack(data)
-            #     # code will be '10'
-            #     stations_per_msg = msg[0]
-            #     stations = msg[1]
-            #
-            #     # send through pubsub
-            #     wx.CallAfter(pub.sendMessage, "current_changer", currentNum=stations_per_msg)
-            #     wx.CallAfter(pub.sendMessage, "fill_list", stations=stations)
-            #
-            # else:
-            #     wx.MessageBox("Wrong Username or Password", "Response", wx.OK)
-
 
 
 class MainMenuPanel(wx.Panel):
     def __init__(self, parent, frame):
         wx.Panel.__init__(self, parent, pos=wx.DefaultPosition,
-                          size=(1000,800),
+                          size=(1000, 800),
                           style=wx.SIMPLE_BORDER)
 
         self.frame = frame
@@ -310,6 +278,10 @@ class MainMenuPanel(wx.Panel):
         self.Hide()
 
     def station_info_btn(self, event):
+        """
+
+        :return: moves to the stations screen
+        """
         self.Hide()
         self.parent.stations.Show()
 
@@ -464,10 +436,7 @@ class StationsPanel(wx.Panel):
         for mac in stations:
             self.listbox.Append(mac)
 
-        #if not self.Hide():
         self.Layout()
-
-
 
     def handle_back(self, event):
         """
@@ -569,7 +538,6 @@ class ChangeNumStationPanel(wx.Panel):
         self.Hide()
 
     def handle_change(self, event):
-        global sym_key, manager_client, manager_client_q
 
         new_num = self.numField.GetValue()
 
@@ -579,9 +547,9 @@ class ChangeNumStationPanel(wx.Panel):
                 # build the msg as the protocol says
                 msg = ManagerProtocol.buildChNumOfStations(new_num)
                 # encrypt the msg
-                enc_msg = sym_key.encrypt(msg)
+                enc_msg = self.frame.sym_key.encrypt(msg)
                 # send the msg
-                manager_client.sendMsg(enc_msg)
+                self.frame.com.sendMsg(enc_msg)
                 # add a msg box
                 wx.MessageBox("Changed Successfully", "Response", wx.OK)
 
@@ -638,7 +606,8 @@ def manager_logic(recv_q, sym_key):
         data = recv_q.get()
         data = sym_key.decrypt(data)
         code, msg = ManagerProtocol.unpack(data)
-        if code == '9':
+        if code == '09':
+            print("CODE 9")
             wx.CallAfter(pub.sendMessage, "login_ans", status=msg)
 
         elif code == '10':
@@ -661,5 +630,5 @@ if __name__ == '__main__':
     public_key = rsa_keys.get_public_key_pem()
     first_login = True
     app = wx.App()
-    first_Frame = mainFrame(sym_key= sym_key, manager_client= manager_client)
+    first_Frame = mainFrame(sym_key=sym_key, manager_client=manager_client)
     app.MainLoop()

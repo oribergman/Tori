@@ -156,7 +156,7 @@ def unpack(msg):
 
 
 def main():
-    pass
+     pass
 #     keys = RSAClass.RSAClass()
 #     pkey = keys.get_public_key_pem().decode()
 #     print(buildPublishPKeySE(str(pkey)))
@@ -168,9 +168,9 @@ def main():
 #    lastIP = "193.2.2.30"
 #     msg = "xdxdxdxdxdxdolololololololoololololololololololololololoololool"
 #     print(buildSendMsg(msg, firstIP, lastIP))
-    station_per_msg = 5
-    stations = ["ff:e6:1f:21:a5:b0","ff:e6:1f:21:a5:b1","ff:e6:1f:21:a5:b2"]
-    print(buildStationInfo(station_per_msg, stations))
+#     station_per_msg = 5
+#     stations = ["ff:e6:1f:21:a5:b0", "ff:e6:1f:21:a5:b1", "ff:e6:1f:21:a5:b2"]
+#     print(buildStationInfo(station_per_msg, stations))
 #    print(buildRealTimeInfo(firstIP, lastIP, stations, port))
 #     msg = "00ff:ee:dd:cc:bb:aa"
 #     msg = """0200000624-----BEGIN PUBLIC KEY-----
@@ -190,8 +190,8 @@ def main():
 #    msg = "11ff:ee:dd:cc:bb:aa"
 #    msg = "12ff:ee:dd:cc:bb:aa"
 #    msg = "133"
-
-    #print(unpack(msg))
+#
+#     print(unpack(msg))
 
 
 if __name__ == "__main__":

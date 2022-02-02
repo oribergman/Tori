@@ -19,11 +19,7 @@ def send_and_receive_site(site_IP, msg):
     :param msg: The msg to the to the site
     :return: returns the data from the response packet of the server
     """
-    # packet_to_send = IP(dst=site_IP)/TCP(dport=80)/Raw(load=msg)
-    # response = sr1(packet_to_send)
-    # data = response[Raw].load
-    #
-    # return data
+
     # create the socket connection to the site
     socket_to_site = socket.socket()
     socket_to_site.connect((site_IP, 80))
@@ -37,7 +33,6 @@ def send_and_receive_site(site_IP, msg):
                 break
             msg.extend(data)
         else:
-            msg.extend(b'%*ORI*%')
             break
     try:
         print("FINAL DATA", msg.decode())
@@ -82,7 +77,6 @@ def open_listening_server(port):
         print("THE MSG TO SEND ", msg)
         data = send_and_receive_site(site_IP, msg)
 
-
     # the response will come in the former listening server
     else:
         # create sending client
@@ -92,6 +86,7 @@ def open_listening_server(port):
         sending_client.sendMsg(msg)
         site_IP, data = listening_q.get()
         print("data from another station - " + str(data))
+
     # build a layer on top of the returning msg
     print("BEFORE ENC", data)
     ret_msg = OnionStation.buildLayer(data, sym_key)

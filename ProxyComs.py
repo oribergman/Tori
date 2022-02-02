@@ -37,7 +37,7 @@ class ProxyComs(object):
                     if current_socket is self.__serverSock:
                         # new client
                         client, address = self.__serverSock.accept()
-                        print(f'{address} - connected')
+                        print(f'{address} - connected to proxy')
                         # add to dictionary
                         self.__users_dict[client] = address
                         self.__open_clients[address] = client
@@ -66,6 +66,7 @@ class ProxyComs(object):
                             if current_socket in self.__users_dict.keys():
                                 self.disconnect(self.__users_dict[current_socket])
                         else:
+                            print(msg)
                             # put into server queue
                             self.__serverQueue.put((self.__users_dict[current_socket], msg))
 
@@ -77,15 +78,19 @@ class ProxyComs(object):
         :return: sends the msg to the ip
         """
         print(self.__open_clients)
-        sock = self.__open_clients[address]
-        if type(msg) == str:
-            msg = msg.encode()
-        print("SENDING TO CLIENT - ", msg)
         try:
-            sock.send(msg)
-        except Exception as e:
-            print(e,4)
-            self.disconnect(address)
+            sock = self.__open_clients[address]
+        except:
+            pass
+        else:
+            if type(msg) == str:
+                msg = msg.encode()
+            print("SENDING TO CLIENT - ", msg)
+            try:
+                sock.send(msg)
+            except Exception as e:
+                print(e,4)
+                self.disconnect(address)
 
     def disconnect(self, address):
         """

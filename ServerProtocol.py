@@ -151,14 +151,16 @@ def unpack(msg):
     elif code == "02":
         length = int(msg[0:8])
         data = msg[8:length+8]
-
+    # ok msg
     elif code == "05":
         data = ""
 
+    # returning packet msg
     elif code == "07":
         length = int(msg[0:8])
         data = msg[8:length + 8]
 
+    # username and password from manager
     elif code == "08":
 
         # extract user
@@ -171,8 +173,8 @@ def unpack(msg):
         password = msg[2:2 + len_password]
 
         data = (user, password)
-
-    elif code == "11" or code == "12" or code == "13" or code == "14":
+    # add or remove station + changing number of station per msg
+    elif code == "11" or code == "12" or code == "13":
         data = msg
 
     return (code, data)

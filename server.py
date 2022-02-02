@@ -99,8 +99,6 @@ def proxy():
 
                 # roll stations for the msg
                 stations_for_msg = roll_stations()
-                # get the last station
-                lastIP = stations_for_msg[-1]
 
                 # roll port
                 port = roll_port()
@@ -145,9 +143,9 @@ def proxy():
 def manager_comms(manager_server_q, manager_server):
 
     # get the station per msg number
-
     station_per_msg = get_station_num()
 
+    # connect to the database
     ToriDB = DB.DB("ToriDB")
     """
 
@@ -169,9 +167,8 @@ def manager_comms(manager_server_q, manager_server):
             except:
                 del ip_key_dict_manager[ip]
 
+        # unpack the data
         code, msg = ServerProtocol.unpack(data)
-
-        print(code, msg)
 
         # the manager sent public key
         if code == '02':
@@ -265,16 +262,21 @@ def roll_key():
 
     :return: randomizing a String for symetric key with length of 16 and returns it
     """
-
+    # string that contains all the letters + all the digits
     l = string_c.ascii_letters + "123456789"
     string = ''
+
+    # randomizing a 16 char long string
     for i in range(16):
         char = random.choice(l)
         string += char
 
+    # checking if the string isn't being used already as a symetric key
     if string in symkey_list:
         return roll_key()
+
     else:
+        # if it isn't being used , add to the symetric key list and return the key
         symkey_list.append(string)
         return string
 
@@ -282,7 +284,7 @@ def roll_key():
 def get_station_num():
     """
 
-    :return: the number of station per msg
+    :return: the number of station per msg (reads form the file)
     """
     with open(r"stationNum.txt", 'r') as handler:
         return int(handler.read())
@@ -292,7 +294,7 @@ def change_station_num(new_num):
     """
 
     :param new_num: new num to change to
-    :return: changes the number of station per msg
+    :return: changes the number of station per msg (rewrites the file)
     """
 
     with open(r"stationNum.txt", 'w') as handler:
@@ -302,14 +304,16 @@ def change_station_num(new_num):
         handler.write(new_num)
 
 
-
 def roll_stations():
     """
 
     :return: chooses 3 stations from the list and returns a list containing their ip
     """
 
+    # returning list
     stations_for_the_msg = []
+
+    # number of stations per msg
     count = get_station_num()
     while count > 0:
         # get a station ip from the dictionary
@@ -317,6 +321,7 @@ def roll_stations():
         if ip_adr not in stations_for_the_msg:
             count = count - 1
             stations_for_the_msg.append(ip_adr)
+
     print(stations_for_the_msg)
     return stations_for_the_msg
 
@@ -385,6 +390,7 @@ while True:
                 station_server.sendMsg(ip, encrypted)
                 # add the key to the dictionary
                 ip_key_dict[ip] = AESClass.AESCipher(sym_key)
+                station_per_msg = get_station_num()
                 if len(ip_key_dict) >= station_per_msg and not initialized_proxy:
                     initialized_proxy = True
                     threading.Thread(target=proxy).start()

@@ -23,7 +23,7 @@ def removeLayer(msg, key):
 
     :param msg: encrypted msg
     :param key: key to decrypt msg
-    :return: the msg
+    :return: removes a layer off the msg
     """
     new_msg = key.decrypt(msg)
     data = ServerProtocol.unpack(new_msg)
@@ -35,7 +35,7 @@ def removeLayerAll(msg, key_list):
 
     :param msg: the msg
     :param key_list: list of keys to decrypt the msg (must be in order)
-    :return:
+    :return: removes all the layer from the msg
     """
 
     for key in reversed(key_list):

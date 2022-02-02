@@ -76,6 +76,12 @@ class DB(object):
         return len(data) != 0
 
     def addUser(self, username, password):
+        """
+
+        :param username: username
+        :param password: password
+        :return: adds the username and the password to the admin table
+        """
         # check if the username and password are between 8-16
         if (len(username) < 17) and (len(username) > 7) and (len(password) > 7) and (len(password) < 17):
             # check if the user exists

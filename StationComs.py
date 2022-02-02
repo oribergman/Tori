@@ -12,13 +12,14 @@ class StationComs(object):
         :param q: queue of the station
         constructor to stationComs
         """
-        self.__port = port
-        self.__ip = ip
-        self.__q = q
-        self.__sock = socket.socket()
-        self.__sock.connect((self.__ip, self.__port))
-        print("CONNECTED")
-        self.__bufferSize = 1024
+        self.__port = port # port to connect on
+        self.__ip = ip  # ip to connect to
+        self.__stationQueue = q     # the queue of the station 
+        self.__sock = socket.socket()   # the socket of the station
+        # connecting to the server
+        self.__sock.connect((self.__ip, self.__port))   
+        self.__bufferSize = 1024    # buffer size
+        # start receiving
         threading.Thread(target=self.__receive).start()
 
     def __receive(self):
@@ -43,6 +44,8 @@ class StationComs(object):
                 # initialize the msg
                 msg = bytearray()
                 counter = 0
+
+                # receive the data
                 while counter < int(length):
                     try:
                         data = self.__sock.recv(self.__bufferSize)
@@ -54,7 +57,7 @@ class StationComs(object):
                         msg.extend(data)
                         counter += len(data)
                         # got full msg
-                self.__q.put(msg)
+                self.__stationQueue.put(msg)
 
     def sendMsg(self, msg):
         """
@@ -62,9 +65,12 @@ class StationComs(object):
         :param msg: the msg to send
         :return: sends the msg
         """
+
+        # get the length of the msg
         if type(msg) == str:
             msg = msg.encode()
         length_msg = str(len(msg)).zfill(8).encode()
+
         try:
             self.__sock.send(length_msg+msg)
         except Exception as e:

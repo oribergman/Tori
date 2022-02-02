@@ -66,9 +66,10 @@ class mainFrame(wx.Frame):
         # create status bar
         self.CreateStatusBar(1)
 
-        self.sym_key = sym_key
-        self.com = manager_client
+        self.sym_key = sym_key # symetric key to encrypt data with server
+        self.com = manager_client  # stationCom object to communicate with server
 
+        # creating the main panel
         main_panel = MainPanel(self)
         box = wx.BoxSizer(wx.VERTICAL)
         box.Add(main_panel, 1, wx.EXPAND)
@@ -91,12 +92,13 @@ class MainPanel(wx.Panel):
 
         v_box = wx.BoxSizer()
 
-        # all panels
+        # creating all the screen panels
         self.login = LoginPanel(self, self.frame)
         self.main_menu = MainMenuPanel(self, self.frame)
         self.change_station = ChangeNumStationPanel(self, self.frame)
         self.stations = StationsPanel(self, self.frame)
 
+        # adding all the screen panels to the sizers
         v_box.Add(self.login,0,wx.EXPAND,0)
         v_box.Add(self.main_menu,0,wx.EXPAND,0)
         v_box.Add(self.change_station,0,wx.EXPAND,0)
@@ -114,11 +116,12 @@ class LoginPanel(wx.Panel):
         wx.Panel.__init__(self, parent, pos=wx.DefaultPosition,
                           size=(1000,800), style=wx.SIMPLE_BORDER)
 
-        self.frame = frame
-        self.parent = parent
+        self.frame = frame  # frame of app
+        self.parent = parent # the parent
 
         self.SetBackgroundColour(wx.LIGHT_GREY)
 
+        # the main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         # title
@@ -166,6 +169,7 @@ class LoginPanel(wx.Panel):
         sizer.AddSpacer(30)
         sizer.Add(btnBox, wx.CENTER | wx.ALL, 5)
 
+        # subscribe to the answer of the login function
         pub.subscribe(self.handle_login_ans, 'login_ans')
 
         self.SetSizer(sizer)
@@ -258,15 +262,13 @@ class MainMenuPanel(wx.Panel):
 
         # creating font
         font = wx.Font(24, wx.FONTFAMILY_ROMAN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
-
+        # set the text's font with the font
         stationButton.SetFont(font)
         changeNumButton.SetFont(font)
 
         # adding buttons to the box
         optionsBox1.Add(stationButton, 1, wx.LEFT, 5)
         optionsBox1.Add(changeNumButton, 1, wx.CENTER, 5)
-
-        # bind all buttons
 
         # adding sizers
         sizer.Add(title_image_box, 0, wx.CENTER, 5)
@@ -304,6 +306,7 @@ class StationsPanel(wx.Panel):
         self.parent = parent
         self.SetBackgroundColour(wx.LIGHT_GREY)
 
+        # main sizer
         mainSizer = wx.BoxSizer(wx.VERTICAL)
 
         # add back button
@@ -327,13 +330,11 @@ class StationsPanel(wx.Panel):
         # add image logo title
         title_image_box = wx.BoxSizer(wx.HORIZONTAL)
 
-        # adding the logo picture
+        # adding the TORI logo picture
         logo_bmp = wx.Image("ToriLogo.png", wx.BITMAP_TYPE_ANY)
         logo_bmp.Rescale(400, 200)
-
         Image = wx.StaticBitmap(self, bitmap=wx.Bitmap(400, 200))
         Image.SetBitmap(wx.Bitmap(logo_bmp))
-
         title_image_box.Add(Image, 0, wx.ALIGN_CENTER, 5)
 
         # creating the small panel
@@ -362,20 +363,25 @@ class StationsPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.NewStation, id=addBtn.GetId())
         self.Bind(wx.EVT_BUTTON, self.OnDelete, id=delBtn.GetId())
 
+        # adding the buttons to the sizer
         vbox.Add((-1, 20))
         vbox.Add(addBtn)
         vbox.Add(delBtn, 0, wx.TOP, 5)
+        # set the main sizer of the button panel
         btnPanel.SetSizer(vbox)
 
+        # adding the list title and button panel to the sizer of the mini panel
         hbox.Add(title_box, 0, wx.LEFT, 5)
         hbox.AddSpacer(10)
         hbox.Add(self.listbox, wx.ID_ANY, wx.EXPAND | wx.ALL, 20)
         hbox.Add(btnPanel, 0.6, wx.EXPAND | wx.RIGHT, 20)
 
+        # setting the mini panel
         self.smallPanel.Centre()
         self.smallPanel.SetSizer(hbox)
         self.smallPanel.Layout()
 
+        # add all the items to the main sizer of the full screen
         mainSizer.Add(back_box, 0, wx.LEFT, 5)
         mainSizer.Add(title_image_box, 0, wx.CENTER|wx.TOP, 5)
         mainSizer.AddSpacer(10)
@@ -437,6 +443,11 @@ class StationsPanel(wx.Panel):
         self.listbox.Append(mac)
 
     def delete_approval(self, mac):
+        """
+
+        :param mac: mac address of the station needed to be removed
+        :return: removes the mac address
+        """
         mac_list = self.listbox.GetStrings()
         count = 0
         index = -1
@@ -563,6 +574,10 @@ class ChangeNumStationPanel(wx.Panel):
         self.Hide()
 
     def handle_change(self, event):
+        """
+        triggers on press on the button "change number"
+        :return: sends the server to change the num
+        """
 
         new_num = self.numField.GetValue()
 
@@ -592,13 +607,17 @@ class ChangeNumStationPanel(wx.Panel):
         self.Layout()
 
     def change_approval(self, new_num):
+        """
+
+        :param new_num: the new number of stations per msg
+        :return: changes the current num of stations per msg
+        """
 
         # add a msg box
         wx.MessageBox("Changed Successfully", "Response", wx.OK)
 
         # change the text of current number
         self.change_current(new_num)
-
 
     def handle_back(self, event):
         """
@@ -610,6 +629,12 @@ class ChangeNumStationPanel(wx.Panel):
 
 
 def manager_logic(recv_q, sym_key):
+    """
+
+    :param recv_q: the queue that receives data from server
+    :param sym_key: the symetric key to decrypt the data coming from server
+    :return: handles the data received from the server (functions as the logic of the app)
+    """
     while True:
         data = recv_q.get()
         data = sym_key.decrypt(data)
@@ -638,15 +663,17 @@ def manager_logic(recv_q, sym_key):
 
 
 if __name__ == '__main__':
+    # creating rsa keys
     rsa_keys = RSAClass.RSAClass()
+
+    # creating communication object
     manager_client_q = queue.Queue()
     manager_client = StationComs.StationComs(2028, "127.0.0.1", manager_client_q)
     # exchange keys
     sym_key = exchange_keys(manager_client_q, manager_client, rsa_keys)
     threading.Thread(target=manager_logic, args=(manager_client_q, sym_key, )).start()
 
-    public_key = rsa_keys.get_public_key_pem()
-    first_login = True
+    # start the app
     app = wx.App()
     first_Frame = mainFrame(sym_key=sym_key, manager_client=manager_client)
     app.MainLoop()

@@ -342,8 +342,6 @@ class StationsPanel(wx.Panel):
         # sizer for small panel
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         self.listbox = wx.ListBox(self.smallPanel)
-        # subscribe with pub sub to fill the list
-        pub.subscribe(self.fill_list, "fill_list")
 
         # title box
         title_box = wx.BoxSizer(wx.HORIZONTAL)
@@ -383,6 +381,11 @@ class StationsPanel(wx.Panel):
         mainSizer.AddSpacer(10)
         mainSizer.Add(self.smallPanel, 0, wx.CENTER,5)
 
+        # subscribe with pub sub to fill the list
+        pub.subscribe(self.fill_list, "fill_list")
+        pub.subscribe(self.add_approval, "add_approve")
+        pub.subscribe(self.delete_approval, "delete_approve")
+
         self.SetSizer(mainSizer)
         self.Layout()
         self.Hide()
@@ -397,8 +400,6 @@ class StationsPanel(wx.Panel):
         # if the mac is valid and there are no duplicates
         if macValid(mac):
             if mac not in self.listbox.GetStrings():
-                # append to list
-                self.listbox.Append(mac)
                 # tell the server to add the station
                 msg = ManagerProtocol.buildAddStationMsg(mac)
                 enc_msg = self.frame.sym_key.encrypt(msg)
@@ -416,8 +417,7 @@ class StationsPanel(wx.Panel):
         index = self.listbox.GetSelection()
         if index != -1:
             mac = self.listbox.GetString(index)
-            # deleting mac from table
-            self.listbox.Delete(index)
+
             # telling server to delete mac
             msg = ManagerProtocol.buildDeleteStationMsg(mac)
             enc_msg = self.frame.sym_key.encrypt(msg)
@@ -425,6 +425,29 @@ class StationsPanel(wx.Panel):
 
         else:
             wx.MessageBox("No MAC chosen", "Error", wx.OK)
+
+    def add_approval(self, mac):
+        """
+
+        :param mac: mac address of station that was added
+        :return: adds the mac address
+        """
+
+        # append to list
+        self.listbox.Append(mac)
+
+    def delete_approval(self, mac):
+        mac_list = self.listbox.GetStrings()
+        count = 0
+        index = -1
+        for macItem in mac_list:
+            # the right mac address
+            if macItem == mac:
+                index = count
+            count = count+1
+        if index != -1:
+            # deleting mac from table
+            self.listbox.Delete(index)
 
     def fill_list(self, stations):
         """
@@ -500,9 +523,6 @@ class ChangeNumStationPanel(wx.Panel):
 
         currentNum_box.Add(self.currentNum_Text, 0, wx.CENTER, 5)
 
-        # subscribe to pubsub to know current num of station per message
-        pub.subscribe(self.change_current, "current_changer")
-
         # box of add station
         change_box = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -533,6 +553,11 @@ class ChangeNumStationPanel(wx.Panel):
         sizer.AddSpacer(30)
         sizer.Add(changeBox, 0, wx.CENTER, 5)
 
+        # subscribe to pubsub to know current num of station per message
+        pub.subscribe(self.change_current, "current_changer")
+        # subscribe to change approval
+        pub.subscribe(self.change_approval, "change_approve")
+
         self.SetSizer(sizer)
         self.Layout()
         self.Hide()
@@ -550,11 +575,7 @@ class ChangeNumStationPanel(wx.Panel):
                 enc_msg = self.frame.sym_key.encrypt(msg)
                 # send the msg
                 self.frame.com.sendMsg(enc_msg)
-                # add a msg box
-                wx.MessageBox("Changed Successfully", "Response", wx.OK)
 
-                # change the text of current number
-                self.change_current(new_num)
             else:
                 wx.MessageBox("The number must be between 3 to 9", "Error", wx.OK)
         else:
@@ -570,27 +591,14 @@ class ChangeNumStationPanel(wx.Panel):
         self.currentNum_Text.SetLabel("Current number of station per message: " + currentNum)
         self.Layout()
 
-    def handle_ask(self, event):
-        """
-        triggers when the "Current number?" button is clicked 
-        :return: asks the server for the Current number of station per msg and presents it
-        """
-        # create the msg
-        msg = ManagerProtocol.buildAskForNumOfStations()
-        enc_msg = sym_key.encrypt(msg)
+    def change_approval(self, new_num):
 
-        # send the msg
-        manager_client.sendMsg(enc_msg)
+        # add a msg box
+        wx.MessageBox("Changed Successfully", "Response", wx.OK)
 
-        # wait for response
-        data = manager_client_q.get()
-        data = sym_key.decrypt(data)
-        code, msg = ManagerProtocol.unpack(data)
+        # change the text of current number
+        self.change_current(new_num)
 
-        # code will be '15' for sure
-        num_of_stations = msg
-
-        wx.MessageBox("Currently there are " + num_of_stations + " per message", "Response", wx.OK)
 
     def handle_back(self, event):
         """
@@ -607,7 +615,6 @@ def manager_logic(recv_q, sym_key):
         data = sym_key.decrypt(data)
         code, msg = ManagerProtocol.unpack(data)
         if code == '09':
-            print("CODE 9")
             wx.CallAfter(pub.sendMessage, "login_ans", status=msg)
 
         elif code == '10':
@@ -617,6 +624,17 @@ def manager_logic(recv_q, sym_key):
             # send through pubsub
             wx.CallAfter(pub.sendMessage, "current_changer", currentNum=stations_per_msg)
             wx.CallAfter(pub.sendMessage, "fill_list", stations=stations)
+
+        # change approval
+        elif code == "14":
+            new_num = msg
+            wx.CallAfter(pub.sendMessage, "change_approve", new_num=new_num)
+        elif code == "15":
+            mac = msg
+            wx.CallAfter(pub.sendMessage, "add_approve", mac=mac)
+        elif code == "16":
+            mac = msg
+            wx.CallAfter(pub.sendMessage, "delete_approve", mac=mac)
 
 
 if __name__ == '__main__':

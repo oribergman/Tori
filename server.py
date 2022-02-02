@@ -143,7 +143,11 @@ def proxy():
 
 
 def manager_comms(manager_server_q, manager_server):
-    global station_per_msg
+
+    # get the station per msg number
+
+    station_per_msg = get_station_num()
+
     ToriDB = DB.DB("ToriDB")
     """
 
@@ -166,6 +170,8 @@ def manager_comms(manager_server_q, manager_server):
                 del ip_key_dict_manager[ip]
 
         code, msg = ServerProtocol.unpack(data)
+
+        print(code, msg)
 
         # the manager sent public key
         if code == '02':
@@ -210,16 +216,34 @@ def manager_comms(manager_server_q, manager_server):
 
         # add station
         elif code == '11':
+            mac = msg
             # adding the station
-            ToriDB.addStation(msg)
+            ToriDB.addStation(mac)
+
+            # send back approval
+            msg_ret = ServerProtocol.buildAddOK(mac)
+            enc_msg = ip_key_dict_manager[ip].encrypt(msg_ret)
+            manager_server.sendMsg(ip, enc_msg)
 
         # delete station
         elif code == '12':
-            ToriDB.deleteStation(msg)
+            mac = msg
+            ToriDB.deleteStation(mac)
+
+            # send back approval
+            msg_ret = ServerProtocol.buildDeleteOK(mac)
+            enc_msg = ip_key_dict_manager[ip].encrypt(msg_ret)
+            manager_server.sendMsg(ip, enc_msg)
 
         # change number of station per msg
         elif code == "13":
             station_per_msg = msg
+            change_station_num(station_per_msg)
+
+            # send back approval
+            msg_ret = ServerProtocol.buildChangeOK(station_per_msg)
+            enc_msg = ip_key_dict_manager[ip].encrypt(msg_ret)
+            manager_server.sendMsg(ip, enc_msg)
 
 
 def roll_port():
@@ -255,6 +279,30 @@ def roll_key():
         return string
 
 
+def get_station_num():
+    """
+
+    :return: the number of station per msg
+    """
+    with open(r"stationNum.txt", 'r') as handler:
+        return int(handler.read())
+
+
+def change_station_num(new_num):
+    """
+
+    :param new_num: new num to change to
+    :return: changes the number of station per msg
+    """
+
+    with open(r"stationNum.txt", 'w') as handler:
+        # delete the content of the file before
+        handler.truncate()
+        # write the new number
+        handler.write(new_num)
+
+
+
 def roll_stations():
     """
 
@@ -262,7 +310,7 @@ def roll_stations():
     """
 
     stations_for_the_msg = []
-    count = station_per_msg
+    count = get_station_num()
     while count > 0:
         # get a station ip from the dictionary
         ip_adr = random.choice(list(ip_key_dict.keys()))
@@ -293,7 +341,7 @@ rsa_keys = RSAClass.RSAClass()
 # createing the RSA keys
 public_key = rsa_keys.get_public_key_pem().decode()
 # station per msg
-station_per_msg = 3
+station_per_msg = get_station_num()
 ToriDB = DB.DB("ToriDB")
 
 port_dict = {}  # port : (ip of client, ip of the site , list of stations for the msg)

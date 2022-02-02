@@ -95,19 +95,42 @@ def buildStationInfo(stations_per_msg, stations):
    return msg
 
 
-def buildSendCurrentNum(num):
+def buildChangeOK(current_num):
     """
+    ;:param current_num: the current num of stations per msg
+    :return: msg build by the protocol to give the manager the approval that the number changed
+    """
+    code = "14"
 
-    :param num: number of stations per msg
-    :return: a msg built by the protocol to send back to manager the current number of stations per msg
+    msg = code + current_num
+
+    return msg
+
+def buildAddOK(mac):
+    """
+    :param mac: mac address of station to add
+    :return: msg build by the protocol to give the manager the approval that the station had been added
     """
 
     code = "15"
 
-    msg = code + str(num)
+    msg = code + mac
 
     return msg
 
+
+def buildDeleteOK(mac):
+    """
+    :param mac: mac address of station to delete
+
+    :return: msg build by the protocol to give the manager the approval that the station had been deleted
+    """
+
+    code = "16"
+
+    msg = code + mac
+
+    return msg
 
 def unpack(msg):
     """

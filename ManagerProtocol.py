@@ -73,18 +73,6 @@ def buildChNumOfStations(num):
     return msg
 
 
-def buildAskForNumOfStations():
-    """
-
-    :return: a msg built by the protocol to send to the server to give the current the number of stations per msg
-    """
-    code = "14"
-
-    msg = code
-
-    return msg
-
-
 def unpack(msg):
     """
 
@@ -124,7 +112,8 @@ def unpack(msg):
         # organize the data
         data = (station_per_msg, station_list)
 
-    elif code == "15":
+    # approval protocols
+    elif code == "14" or code == "15" or code == "16":
         data = msg
 
     return (code, data)

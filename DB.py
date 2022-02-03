@@ -49,9 +49,11 @@ class DB(object):
 
         """
         password = hashlib.md5(password.encode()).hexdigest()
-        sql = f"SELECT * FROM {self.adminTbl} WHERE username='{username}' AND password='{password}';"
-        self.cursor.execute(sql)
-        data = self.cursor.fetchall()
+        data = ""
+        if self.__checkUserExists(username):
+            sql = f"SELECT * FROM {self.adminTbl} WHERE username='{username}' AND password='{password}';"
+            self.cursor.execute(sql)
+            data = self.cursor.fetchall()
         return len(data) != 0
 
     def __checkUserExists(self, username):

@@ -35,30 +35,6 @@ def exchange_keys(manager_client_q, manager_client, rsa_keys):
     return sym_key
 
 
-def macValid(mac):
-    """
-
-    :param mac: mac address
-    :return: checks if the mac is valid
-    """
-    valid = False
-    if type(mac) == str:
-        mac_list = mac.split(":")
-        if len(mac_list) == 6:
-            valid = True
-            for pair in mac_list:
-                if not valid:
-                    break
-                if len(pair) != 2:
-                    valid = False
-                else:
-                    # all characters between are a digit or a letter
-                    if not (pair[0].isalpha() or pair[0].isdigit()):
-                        valid = False
-                    elif not (pair[1].isalpha() or pair[1].isdigit()):
-                        valid = False
-    return valid
-
 
 class mainFrame(wx.Frame):
     def __init__(self, sym_key, manager_client, parent=None):
@@ -404,7 +380,7 @@ class StationsPanel(wx.Panel):
         mac = wx.GetTextFromUser('Enter a MAC', 'Insert MAC')
 
         # if the mac is valid and there are no duplicates
-        if macValid(mac):
+        if self.__macValid(mac):
             if mac not in self.listbox.GetStrings():
                 # tell the server to add the station
                 msg = ManagerProtocol.buildAddStationMsg(mac)
@@ -480,6 +456,30 @@ class StationsPanel(wx.Panel):
         self.frame.SetSize((1000, 800))
         self.Hide()
         self.parent.main_menu.Show()
+
+    def __macValid(self, mac):
+        """
+
+        :param mac: mac address
+        :return: checks if the mac is valid
+        """
+        valid = False
+        if type(mac) == str:
+            mac_list = mac.split(":")
+            if len(mac_list) == 6:
+                valid = True
+                for pair in mac_list:
+                    if not valid:
+                        break
+                    if len(pair) != 2:
+                        valid = False
+                    else:
+                        # all characters between are a digit or a letter
+                        if not (pair[0].isalpha() or pair[0].isdigit()):
+                            valid = False
+                        elif not (pair[1].isalpha() or pair[1].isdigit()):
+                            valid = False
+        return valid
 
 
 class ChangeNumStationPanel(wx.Panel):

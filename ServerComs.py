@@ -2,7 +2,6 @@ import socket
 import select
 import threading
 import queue
-import time
 
 
 class ServerComs(object):
@@ -96,8 +95,8 @@ class ServerComs(object):
         :param ip: ip address
         disconnects the socket of the ip from the server
         """
-
-        if ip in self.__open_clients.keys() :
+        print(self.__open_clients.keys())
+        if ip in self.__open_clients.keys():
             print(f"{self.__users_dict[self.__open_clients[ip]]} disconnected")
             self.__open_clients[ip].close()
             try:

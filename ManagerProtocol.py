@@ -79,7 +79,6 @@ def unpack(msg):
     :param msg: msg to unpack
     :return: unpacks the msg according to the protocol and returns a tuple of the code and the msg
     """
-    print(msg)
     # extract msg code
     code = msg[:2]
     msg = msg[2:]

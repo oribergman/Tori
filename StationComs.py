@@ -1,6 +1,6 @@
 import socket
 import threading
-import queue
+
 
 
 class StationComs(object):
@@ -74,7 +74,6 @@ class StationComs(object):
         try:
             self.__sock.send(length_msg+msg)
         except Exception as e:
-            print(1)
             print(e)
             self.__sock.close()
 
@@ -85,5 +84,7 @@ def main():
     # st = StationComs(5918, "127.000.000.001", myQ)
     # st.sendMsg("Hey")
     # print(myQ.get())
+
+
 if __name__ == "__main__":
     main()

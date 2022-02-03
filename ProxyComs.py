@@ -77,12 +77,8 @@ class ProxyComs(object):
         :param msg: msg to send
         :return: sends the msg to the ip
         """
-        print(self.__open_clients)
-        try:
+        if address in self.__open_clients.keys():
             sock = self.__open_clients[address]
-        except:
-            pass
-        else:
             if type(msg) == str:
                 msg = msg.encode()
             print("SENDING TO CLIENT - ", msg)
@@ -91,6 +87,8 @@ class ProxyComs(object):
             except Exception as e:
                 print(e,4)
                 self.disconnect(address)
+        else:
+            print("not found the address")
 
     def disconnect(self, address):
         """

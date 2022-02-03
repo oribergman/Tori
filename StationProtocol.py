@@ -1,6 +1,3 @@
-import RSAClass
-
-
 def buildSendMacAdr(mac):
     """
 
@@ -58,10 +55,10 @@ def unpack(msg):
     :param msg: the msg to unpack
     :return: unpacks the msg according to the protocol and returns a tuple of the code and the msg
     """
-    print("unpcaking", msg)
     # extract msg code
     code = msg[:2]
     msg = msg[2:]
+    data = ""
 
     if code == "01":
         length = int(msg[0:8])

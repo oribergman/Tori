@@ -67,18 +67,18 @@ def browserCom():
                         # got the full msg
                         if len(data) < 1024:
                             receiving = False
-                print("RESPONSE FROM BROWSER", resp_msg)
                 # disconnecting browser
-                if resp_msg == bytearray(b''):
-                    del waiting_clients[browsers_clients[current_browser]]
-                    current_browser.close()
-                    browsers_clients[current_browser].close()
-                    del browsers_clients[current_browser]
-                    print("DISCONNECTING")
+                if resp_msg != bytearray(b''):
+                    print("RESPONSE FROM BROWSER", resp_msg)
+                #     del waiting_clients[browsers_clients[current_browser]]
+                #     current_browser.close()
+                #     browsers_clients[current_browser].close()
+                #     del browsers_clients[current_browser]
+                #     print("DISCONNECTING")
 
-                # sending the msg to the client
-                if current_browser in browsers_clients and browsers_clients[current_browser] in users_dict:
-                    sendMsg(users_dict[browsers_clients[current_browser]], resp_msg)
+                    # sending the msg to the client
+                    if current_browser in browsers_clients and browsers_clients[current_browser] in users_dict:
+                        sendMsg(users_dict[browsers_clients[current_browser]], resp_msg)
 
 
 serverSock = socket.socket()

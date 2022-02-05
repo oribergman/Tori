@@ -86,7 +86,7 @@ def proxy():
             if len(msg) == 0:
                 proxy_server.disconnect(client_address)
 
-            if msg.startswith("GET"):
+            if msg.startswith("GET") or msg.startswith("POST") or msg.startswith("HEAD")  or msg.startswith("PUT") or msg.startswith("DELETE") or msg.startswith("OPTIONS"):
                 print("LEN OF MSG", len(msg))
                 print(msg)
                 # extract the url

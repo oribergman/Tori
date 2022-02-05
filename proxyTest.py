@@ -2,6 +2,7 @@ import socket
 import select
 import threading
 
+
 def disconnect(address):
     """
 
@@ -66,14 +67,15 @@ def browserCom():
                         # got the full msg
                         if len(data) < 1024:
                             receiving = False
+                print("RESPONSE FROM BROWSER", resp_msg)
                 # disconnecting browser
                 if resp_msg == bytearray(b''):
                     del waiting_clients[browsers_clients[current_browser]]
                     current_browser.close()
                     browsers_clients[current_browser].close()
                     del browsers_clients[current_browser]
+                    print("DISCONNECTING")
 
-                print("RESPONSE FROM BROWSER", resp_msg)
                 # sending the msg to the client
                 if current_browser in browsers_clients and browsers_clients[current_browser] in users_dict:
                     sendMsg(users_dict[browsers_clients[current_browser]], resp_msg)
@@ -131,21 +133,6 @@ while True:
                     if current_socket in waiting_clients.keys():
                         # sending  the data from client to browser
                         waiting_clients[current_socket].send(msg)
-                        # # receive response
-                        # resp_msg = bytearray()
-                        # while True:
-                        #     rlist, wlist, xlist = select.select([waiting_clients[current_socket]], [], [])
-                        #     if rlist:
-                        #         data = waiting_clients[current_socket].recv(1024)
-                        #         if data == b'':
-                        #             break
-                        #         resp_msg.extend(data)
-                        #     else:
-                        #         break
-                        #
-                        # print("GOT RESP", resp_msg)
-                        # # send the response back to the client
-                        # sendMsg(users_dict[current_socket], resp_msg)
 
                     else:
                         msg = msg.decode()
@@ -161,11 +148,15 @@ while True:
                                 # connect to the site
                                 browserSocket = socket.socket()
                                 print(address)
-                                browserSocket.connect((browserIP, browserPort))
-                                waiting_clients[current_socket] = browserSocket
-                                browsers_clients[browserSocket] = current_socket
-                                msg_ret = "HTTP/1.1 200 Connection established\r\n\r\n"
-                                sendMsg(users_dict[current_socket], msg_ret)
+                                try:
+                                    browserSocket.connect((browserIP, browserPort))
+                                except:
+                                    disconnect(users_dict[current_socket])
+                                else:
+                                    waiting_clients[current_socket] = browserSocket
+                                    browsers_clients[browserSocket] = current_socket
+                                    msg_ret = "HTTP/1.1 200 Connection established\r\n\r\n"
+                                    sendMsg(users_dict[current_socket], msg_ret)
 
                             elif msg.startswith('POST') or msg.startswith('GET'):
                                 browserLink, browerPort = address.split(':')
@@ -193,7 +184,6 @@ while True:
 
                             else:
                                 disconnect(users_dict[current_socket])
-
 
 
 

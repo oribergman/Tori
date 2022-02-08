@@ -34,10 +34,7 @@ def send_and_receive_site(site_IP, msg):
             msg.extend(data)
         else:
             break
-    try:
-        print("FINAL DATA", msg.decode())
-    except:
-        pass
+
     return msg
 
 
@@ -48,7 +45,6 @@ def open_listening_server(port):
     :return: opens a listening server on the port receives and sends the data forward
     """
     # listen for the msg
-    print("received port - " + str(port))
     listening_q = queue.Queue()
     listening_server = ServerComs.ServerComs(port, listening_q)
 
@@ -58,32 +54,37 @@ def open_listening_server(port):
     OK_msg_enc = sym_key.encrypt(OK_msg)
     # send to the server that the station's listening server is up
     client.sendMsg(OK_msg_enc)
-    print("sent msg")
+
+    print("sent OK")
+
     # receive the msg from another station/the server
     previous_station, msg = listening_q.get()
     # remove one layer
     data = OnionStation.remove_layer(msg, sym_key)
     print("received data- " + str(data))
+
     # extract the info
     code = data[0]
     next_station = data[1][0]
     site_IP = data[1][1]
     msg = data[1][2]
     previous_port = port
+
     # if the next station is the site, needs to send on port 80
     print("NEXT STATION - " + str(next_station), "SITE_IP - " + str(site_IP))
-    # in case the next station is the site is from the site
+    # in case the next station is the site
     if next_station == site_IP:
-        print("THE MSG TO SEND ", msg)
         data = send_and_receive_site(site_IP, msg)
 
-    # the response will come in the former listening server
+    # next station is a normal station
     else:
         # create sending client
         sending_q = queue.Queue()
         sending_client = StationComs.StationComs(port, next_station, sending_q)
         # send the msg to the site/next station
         sending_client.sendMsg(msg)
+
+        # wait for returning msg
         site_IP, data = listening_q.get()
         print("data from another station - " + str(data))
 
@@ -91,8 +92,8 @@ def open_listening_server(port):
     print("BEFORE ENC", data)
     ret_msg = OnionStation.buildLayer(data, sym_key)
     print("ENC", ret_msg)
+
     # send the msg to the previous station
-    # create sending client
     sending_q = queue.Queue()
     sending_client = StationComs.StationComs(previous_port, previous_station, sending_q)
     # send the msg to the previous station
@@ -138,6 +139,7 @@ while connecting:
         # build AESCipher with the symetric key
         sym_key = AESClass.AESCipher(sym_key)
         connecting = False
+
 # after the station finished connecting
 while True:
     data = first_con_q.get()

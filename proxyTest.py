@@ -41,6 +41,42 @@ def sendMsg(address, msg):
         print("not found the address", "address = " + str(address))
 
 
+def httpGet(address, current_socket, msg):
+    try:
+        browserIP = socket.gethostbyname(address)
+    except:
+        disconnect(users_dict[current_socket])
+    else:
+        # connect to the site
+        browserSocket = socket.socket()
+        try:
+            browserSocket.connect((browserIP, 80))
+        except:
+            disconnect(users_dict[current_socket])
+        else:
+            if type(msg) == str:
+                msg = msg.encode()
+            browserSocket.send(msg)
+            receive(browserSocket, users_dict[current_socket])
+
+
+def receive(socket_to_site, address):
+    # create the socket connection to the site
+    print("GOT HTTP ADDRESS", address)
+    msg = bytearray()
+    while True:
+        rlist, wlist, xlist = select.select([socket_to_site], [], [])
+        if rlist:
+            data = socket_to_site.recv(1024)
+            if data == b'':
+                break
+            msg.extend(data)
+        else:
+            break
+    print("BLA BLA BLA", msg)
+    sendMsg(address, msg)
+
+
 def browserCom():
     while True:
         try:
@@ -58,8 +94,6 @@ def browserCom():
                     except Exception as e:
                         print(e)
                         del waiting_clients[browsers_clients[current_browser]]
-                        current_browser.close()
-                        browsers_clients[current_browser].close()
                         del browsers_clients[current_browser]
 
                     else:
@@ -139,8 +173,8 @@ while True:
                         msgSplit = msg.split()
                         address = msgSplit[1]
 
-                        if address.split(':')[1].isnumeric():
-                            if msg.startswith('CONNECT'):
+                        if msg.startswith('CONNECT'):
+                            if address.split(':')[1].isnumeric():
                                 browserLink, browserPort = address.split(':')
                                 browserPort = int(browserPort)
                                 browserIP = socket.gethostbyname(browserLink)
@@ -157,33 +191,15 @@ while True:
                                     browsers_clients[browserSocket] = current_socket
                                     msg_ret = "HTTP/1.1 200 Connection established\r\n\r\n"
                                     sendMsg(users_dict[current_socket], msg_ret)
-
-                            elif msg.startswith('POST') or msg.startswith('GET'):
-                                browserLink, browerPort = address.split(':')
-                                browerPort = int(browerPort)
-                                browserIP = socket.gethostbyname(browserLink)
-                                # connect to the site
-                                browserSocket = socket.socket()
-                                print(address)
-                                browserSocket.connect((browserIP, browerPort))
-                                browserSocket.send(msg)
-
-                                # receive response
-                                resp_msg = bytearray()
-                                while True:
-                                    rlist, wlist, xlist = select.select([browserSocket], [], [])
-                                    if rlist:
-                                        data = browserSocket.recv(1024)
-                                        if data == b'':
-                                            break
-                                        resp_msg.extend(data)
-                                    else:
-                                        break
-                                print("GOT RESP", resp_msg)
-                                sendMsg(users_dict[current_socket], resp_msg)
-
                             else:
                                 disconnect(users_dict[current_socket])
+
+                        elif msg.startswith('POST') or msg.startswith('GET') or msg.startswith("HEAD") or msg.startswith("PUT") or msg.startswith("DELETE") or msg.startswith("OPTIONS"):
+                            address = msg.split('/')[2]
+                            threading.Thread(target=httpGet, args= (address, current_socket, msg)).start()
+
+                        else:
+                            disconnect(users_dict[current_socket])
 
 
 

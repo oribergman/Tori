@@ -132,6 +132,41 @@ def buildDeleteOK(mac):
 
     return msg
 
+
+def buildConnectMsg(clientIP, browserIP, browserPort, msg):
+    """
+
+    :param clientIP: the ip of the client
+    :param browserPort: the port to connect on
+    :param browserIP: browser
+    :return: msg build by the protocol to send a msg from the CONNECT method
+    """
+
+    code = "17"
+
+    lenIP1 = str(len(clientIP)).zfill(2)
+    lenIP2 = str(len(browserIP)).zfill(2)
+    lenPort = str(len(str(browserPort))).zfill(1)
+    lenMsg = str(len(msg)).zfill(8)
+
+    ret_msg = code + lenIP1 + clientIP + lenIP2 + browserIP + lenPort + str(browserPort) + lenMsg + msg
+
+    return ret_msg
+
+
+def buildSendMsgHTTPS(msg, passto, lastip):
+    code = "19"
+    lenIP1 = str(len(passto)).zfill(2)
+
+    lenIP2 = str(len(lastip)).zfill(2)
+
+    length_msg = str(len(msg)).zfill(8)
+
+    new_msg = code + lenIP1 + passto + lenIP2 + lastip + length_msg + str(msg)
+
+    return new_msg
+
+
 def unpack(msg):
     """
 
@@ -177,11 +212,24 @@ def unpack(msg):
     elif code == "11" or code == "12" or code == "13":
         data = msg
 
+    elif code == "18":
+        # extract first IP
+        lenIP1 = int(msg[0:2])
+        IP1 = msg[2:lenIP1 + 2]
+        msg = msg[2 + lenIP1:]
+
+        # extract port
+        lenPort = int(msg[:1])
+        Port = msg[1:lenPort + 1]
+
+        data = (IP1, Port)
+
     return (code, data)
 
 
 def main():
-     pass
+    print(unpack("1812192.168.1.113443"))
+#     print(buildConnectMsg("192.168.4.97", "192.168.4.96", 443, "CONNECT TO YOUR MAMA"))
 #     keys = RSAClass.RSAClass()
 #     pkey = keys.get_public_key_pem().decode()
 #     print(buildPublishPKeySE(str(pkey)))

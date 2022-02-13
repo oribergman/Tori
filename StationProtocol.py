@@ -49,6 +49,18 @@ def buildSendMsgRet(msg):
     return msg
 
 
+def buildSendEstablished(browserIP, browserPort):
+
+    code = "18"
+
+    lenIP = str(len(browserIP)).zfill(2)
+    lenPort = str(len(str(browserPort))).zfill(1)
+
+    msg = code + lenIP + browserIP + lenPort + str(browserPort)
+
+    return msg
+
+
 def unpack(msg):
     """
 
@@ -86,11 +98,50 @@ def unpack(msg):
         # asseble the data
         data = (IP1, IP2, new_msg)
 
+    elif code == "17":
+        # extract first IP
+        lenIP1 = int(msg[0:2])
+        IP1 = msg[2:lenIP1 + 2]
+        msg = msg[2 + lenIP1:]
+
+        # extract second IP
+        lenIP2 = int(msg[0:2])
+        IP2 = msg[2:lenIP2 + 2]
+        msg = msg[2 + lenIP2:]
+
+        # extract port
+        lenPort = int(msg[:1])
+        Port = msg[1:lenPort+1]
+
+        msg = msg[lenPort+1:]
+
+        # extract the msg
+        lenMsg = int(msg[:8])
+        new_msg = msg[8:lenMsg+8]
+
+        data = (IP1, IP2, Port, new_msg)
+
+    elif code == '19':
+        # extract first IP
+        lenIP1 = int(msg[0:2])
+        IP1 = msg[2:lenIP1 + 2]
+        msg = msg[2 + lenIP1:]
+        # extract second IP
+        lenIP2 = int(msg[0:2])
+        IP2 = msg[2:lenIP2 + 2]
+        msg = msg[2 + lenIP2:]
+        # extract the msg
+        len_msg = int(msg[:8])
+        new_msg = msg[8:len_msg + 8]
+        # asseble the data
+        data = (IP1, IP2, new_msg)
+
     return (code, data)
 
 
 def main():
-    pass
+    print(buildSendEstablished("192.168.1.11", 443))
+#     print(unpack("1712192.168.4.9712192.168.4.96344300000020CONNECT TO YOUR MAMA"))
 #     print(buildSendMacAdr("ff:ee:dd:cc:bb:aa"))
 #     keys = RSAClass.RSAClass()
 #     pkey = keys.get_public_key_pem().decode()

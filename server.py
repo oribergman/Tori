@@ -12,7 +12,7 @@ import OnionServer
 import ProxyComs
 
 
-def wait_for_ok(stations_for_msg, port, station_server, station_server_q, ip_key_dict, port_list, client_address, dst_ip, ret_msg_queue, msg):
+def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q, ip_key_dict, port_list, client_address,dst_ip, ret_msg_queue, msg, code):
     """
 
     :param station_for_msg: all the stations for the specific msg
@@ -34,7 +34,7 @@ def wait_for_ok(stations_for_msg, port, station_server, station_server_q, ip_key
         # send the port to the station
         while not received_ok:
             # build by protocol
-            chosen_port = ServerProtocol.buildSendPort(port)
+            chosen_port = ServerProtocol.buildSendPort(sendingPort)
             # encrypt
             chosen_port = ip_key_dict[station_ip].encrypt(chosen_port)
             # send the port
@@ -49,19 +49,20 @@ def wait_for_ok(stations_for_msg, port, station_server, station_server_q, ip_key
                 print("GOT OK FROM", ip)
     # after the stations servers are up save the data on the msg
     # port_dict[chosen_port] = (client_address, dst_ip, stations_for_msg)
-    port_list.append(port)
+    port_list.append(sendingPort)
+
     # open the code that sends the msg
     #threading.Thread(target=handle_send_receive_msg, args=(msg, port, client_address, dst_ip, stations_for_msg, ret_msg_queue)).start()
-    handle_send_receive_msg(msg, port, client_address, dst_ip, stations_for_msg, ret_msg_queue)
+    handle_send_receive_msg(msg, sendingPort, client_address, dst_ip, stations_for_msg, ret_msg_queue, code)
 
 
-def handle_send_receive_msg(data, port, client_port, dst_ip, stations, ret_msg_queue):
+def handle_send_receive_msg(data, port, client_address, dst_ip, browserPort, stations, ret_msg_queue, code):
 
     """
 
     :param data: the sniffed data
     :param port: port to receive and send on
-    :param clientIP: the IP address of the client
+    :param client_address: the IP address of the client
     :param dst_ip: the destination IP (site IP)
     :param stations: list of the chosen stations for sending the msg
     sends the msg to the first station and receives response
@@ -79,17 +80,28 @@ def handle_send_receive_msg(data, port, client_port, dst_ip, stations, ret_msg_q
     for i in range(len(stations)):
         ip_key_list.append((stations[i], ip_key_dict[stations[i]]))
 
-    # building layers on top of the packet
-    msg = OnionServer.buildLayerAll(data, ip_key_list, dst_ip)
+    if code == '17':
+        # building layers on the msg
+        msg = OnionServer.buildLayerAllConnect(data, ip_key_list, dst_ip, browserPort)
+
+    elif code == '06':
+        # building layers on top of the packet
+        msg = OnionServer.buildLayerAll(data, ip_key_list, dst_ip)
+
     # sends the msg forward
     sending_client.sendMsg(msg)
 
     # wait for the returning msg from the site
     ip, ret_msg = listening_q.get()
-    send_msg_to_client(ret_msg, client_port, ip_key_list, ret_msg_queue)
+    # remove the port from the used ports
+    port_list.remove(port)
+    # close the temporally server
+    listenting_server.close_server()
+    # send msg back to client
+    send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue)
 
 
-def send_msg_to_client(ret_msg, client_port, ip_key_list, ret_msg_queue):
+def send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue):
     """
 
     :param ret_msg: the returning msg from the site
@@ -102,15 +114,15 @@ def send_msg_to_client(ret_msg, client_port, ip_key_list, ret_msg_queue):
         list_of_keys.append(ip_key_list[i][1])
 
     # remove all the layers
-    ret_msg = OnionServer.removeLayerAll(ret_msg, list_of_keys)
+    code, ret_msg = OnionServer.removeLayerAll(ret_msg, list_of_keys)
 
-    ret_msg_queue.put((client_port, ret_msg))
+    ret_msg_queue.put((client_address, ret_msg, code))
 
 
-def proxy(ip_key_dict, station_server, station_server_q, port_list):
+def proxy(ip_key_dict, station_server, station_server_q, port_list, client_browser):
     """
 
-    :return: opens the proxy server and puts the data received in the q as (ip, dstip, dstport, msg)
+    :return: opens the proxy server rolls stations and rolls port and calls wait_for_ok
     """
     # set up proxy server
     proxy_queue = queue.Queue()
@@ -123,64 +135,100 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list):
             if not proxy_queue.empty():
                 # extract a msg
                 client_address, msg = proxy_queue.get()
-                msg = msg.decode()
-                # # if disconnect
-                # if len(msg) == 0:
-                #     proxy_server.disconnect(client_address)
-                # if its a normal http request
-                if msg.startswith("GET") or msg.startswith("POST") or msg.startswith("HEAD") or msg.startswith("PUT") or msg.startswith("DELETE") or msg.startswith("OPTIONS"):
-                    print(msg)
-                    # extract the url
-                    url = msg.split("/")[2]
-                    # get the ip of the url
-                    try:
-                        dst_ip = socket.gethostbyname(url)
-                    except Exception as e:
-                        # invalid link
-                        proxy_server.disconnect(client_address)
+                if client_address not in client_browser.keys():
+                    msg = msg.decode()
+                    # # if disconnect
+                    # if len(msg) == 0:
+                    #     proxy_server.disconnect(client_address)
+                    # if its a normal http request
+                    if msg.startswith("GET") or msg.startswith("POST") or msg.startswith("HEAD") or msg.startswith("PUT") or msg.startswith("DELETE") or msg.startswith("OPTIONS"):
+                        print(msg)
+                        # extract the url
+                        url = msg.split("/")[2]
+                        # get the ip of the url
+                        try:
+                            dst_ip = socket.gethostbyname(url)
+                        except Exception as e:
+                            # invalid link
+                            proxy_server.disconnect(client_address)
 
-                    else:
-                        # roll stations for the msg
-                        stations_for_msg = roll_stations()
+                        else:
+                            # roll stations for the msg
+                            stations_for_msg = roll_stations()
 
-                        # roll port
-                        port = roll_port()
-                        threading.Thread(target=wait_for_ok, args=(stations_for_msg, port, station_server, station_server_q, ip_key_dict, port_list, client_address, dst_ip, ret_msg_queue, msg)).start()
-                        # # send the port to all the stations and wait for the accept
-                        # for station_ip in stations_for_msg:
-                        #
-                        #     received_ok = False
-                        #     # send the port to the station
-                        #     while not received_ok:
-                        #         # build by protocol
-                        #         chosen_port = ServerProtocol.buildSendPort(port)
-                        #         # encrypt
-                        #         chosen_port = ip_key_dict[station_ip].encrypt(chosen_port)
-                        #         # send the port
-                        #         station_server.sendMsg(station_ip, chosen_port)
-                        #         # wait for ok
-                        #         ip, data = station_server_q.get()
-                        #         ok_msg = ip_key_dict[station_ip].decrypt(data)
-                        #         code, ok_msg = ServerProtocol.unpack(ok_msg)
-                        #         # received OK
-                        #         if code == "05":
-                        #             received_ok = True
-                        #             print("GOT OK FROM", ip)
-                        # # after the stations servers are up save the data on the msg
-                        # #port_dict[chosen_port] = (client_address, dst_ip, stations_for_msg)
-                        # port_list.append(port)
-                        # # open the code that sends the msg
-                        # threading.Thread(target=handle_send_receive_msg, args=(msg, port, client_address, dst_ip, stations_for_msg, ret_msg_queue)).start()
+                            # roll port
+                            port = roll_port()
+                            # wait for ok
+                            threading.Thread(target=wait_for_ok, args=(stations_for_msg, port, station_server, station_server_q, ip_key_dict, port_list, client_address, dst_ip, ret_msg_queue, msg)).start()
+                            # # send the port to all the stations and wait for the accept
+                            # for station_ip in stations_for_msg:
+                            #
+                            #     received_ok = False
+                            #     # send the port to the station
+                            #     while not received_ok:
+                            #         # build by protocol
+                            #         chosen_port = ServerProtocol.buildSendPort(port)
+                            #         # encrypt
+                            #         chosen_port = ip_key_dict[station_ip].encrypt(chosen_port)
+                            #         # send the port
+                            #         station_server.sendMsg(station_ip, chosen_port)
+                            #         # wait for ok
+                            #         ip, data = station_server_q.get()
+                            #         ok_msg = ip_key_dict[station_ip].decrypt(data)
+                            #         code, ok_msg = ServerProtocol.unpack(ok_msg)
+                            #         # received OK
+                            #         if code == "05":
+                            #             received_ok = True
+                            #             print("GOT OK FROM", ip)
+                            # # after the stations servers are up save the data on the msg
+                            # #port_dict[chosen_port] = (client_address, dst_ip, stations_for_msg)
+                            # port_list.append(port)
+                            # # open the code that sends the msg
+                            # threading.Thread(target=handle_send_receive_msg, args=(msg, port, client_address, dst_ip, stations_for_msg, ret_msg_queue)).start()
+
+                    # client want to open tunnel
+                    elif msg.startswith('CONNECT'):
+                        msgSplit = msg.split()
+                        address = msgSplit[1]
+                        if address.split(':')[1].isnumeric():
+                            browserLink, browserPort = address.split(':')
+                            try:
+                                browserIP = socket.gethostbyname(browserLink)
+                            except:
+                                # invalid link
+                                proxy_server.disconnect(client_address)
+                            else:
+                                # rolling port
+                                sendingPort = roll_port()
+                                # roll stations for the msg
+                                stations_for_msg = roll_stations()
+
+                                # deliver the msg
+                                threading.Thread(target=wait_for_ok, args=(stations_for_msg, sendingPort, station_server, station_server_q, ip_key_dict, port_list, client_address, browserIP, ret_msg_queue, msg)).start()
+
+                # if secure connection and client already connected
+                else:
+                   pass #TODO: AFTER CONNECTION
 
             # if there is a msg to send back
             if not ret_msg_queue.empty():
                 # get  the ip and the msg to return
-                (clientIP, msg) = ret_msg_queue.get()
-                print("CLIENT ip - ", client_address, "RETMSG- ", msg)
-                # return the msg to the client
-                proxy_server.sendMsg(client_address, msg)
-                # disconnect the client
-                proxy_server.disconnect(client_address)
+                (client_address, msg, code) = ret_msg_queue.get()
+                print("CLIENT ADDRESS - ", client_address, "RETMSG- ", msg, "CODE - ", code)
+                if code == '18':
+                    msg = "HTTP/1.1 200 Connection established\r\n\r\n"
+                    client_browser[client_address] = browserIP
+                    # return the msg to the client
+                    proxy_server.sendMsg(client_address, msg)
+
+                elif code == '07':
+                    # return the msg to the client
+                    proxy_server.sendMsg(client_address, msg)
+                    # disconnect the client
+                    proxy_server.disconnect(client_address)
+
+                elif code == '20':
+                    pass
 
 
 def manager_comms(manager_server_q, manager_server):
@@ -381,6 +429,7 @@ manager_server = ServerComs.ServerComs(2028, manager_server_q)
 # opening thread to deal with manager comms
 threading.Thread(target=manager_comms, args=(manager_server_q, manager_server)).start()
 
+client_browser = {}
 ip_key_dict_temp = {}
 ip_key_dict_manager = {}
 ip_key_dict = {} # ip : key
@@ -438,7 +487,7 @@ while True:
                 station_per_msg = get_station_num()
                 if len(ip_key_dict) >= station_per_msg and not initialized_proxy:
                     initialized_proxy = True
-                    threading.Thread(target=proxy, args=(ip_key_dict, station_server, )).start()
+                    threading.Thread(target=proxy, args=(ip_key_dict, station_server, client_browser, )).start()
 
         else:
             # if the communication is not permitted , kick the ip off the server

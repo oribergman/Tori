@@ -18,6 +18,13 @@ def buildLayer(msg, key):
     return new_msg.decode()
 
 
+def buildLayerHTTPS(msg, key):
+    new_msg = StationProtocol.buildSendHTTPS(msg)
+    new_msg = key.encrypt(new_msg)
+
+    return new_msg.decode()
+
+
 def buildLayerConnect(browserIP, browserPort, key):
     new_msg = StationProtocol.buildSendEstablished(browserIP, browserPort)
     new_msg = key.encrypt(new_msg)

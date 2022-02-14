@@ -61,6 +61,17 @@ def buildSendEstablished(browserIP, browserPort):
     return msg
 
 
+def buildSendHTTPS(msg):
+
+    code = "20"
+
+    lenMsg = str(len(msg)).zfill(8)
+
+    msg = code + lenMsg + str(msg)
+
+    return msg
+
+
 def unpack(msg):
     """
 
@@ -122,19 +133,8 @@ def unpack(msg):
         data = (IP1, IP2, Port, new_msg)
 
     elif code == '19':
-        # extract first IP
-        lenIP1 = int(msg[0:2])
-        IP1 = msg[2:lenIP1 + 2]
-        msg = msg[2 + lenIP1:]
-        # extract second IP
-        lenIP2 = int(msg[0:2])
-        IP2 = msg[2:lenIP2 + 2]
-        msg = msg[2 + lenIP2:]
-        # extract the msg
-        len_msg = int(msg[:8])
-        new_msg = msg[8:len_msg + 8]
-        # asseble the data
-        data = (IP1, IP2, new_msg)
+        lenMsg = msg[0:8]
+        data = msg[8:8 + lenMsg]
 
     return (code, data)
 

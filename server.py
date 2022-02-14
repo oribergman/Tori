@@ -73,6 +73,7 @@ def handle_send_receive_msg(data, port, client_address, dst_ip, browserPort, sta
     :param stations: list of the chosen stations for sending the msg
     sends the msg to the first station and receives response
     """
+
     # creating listening server
     listening_q = queue.Queue()
     listenting_server = ServerComs.ServerComs(int(port), listening_q)
@@ -106,6 +107,16 @@ def handle_send_receive_msg(data, port, client_address, dst_ip, browserPort, sta
     listenting_server.close_server()
     # send msg back to client
     send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port)
+
+    if code == "17":
+        while True:
+            # wait for the returning msg from the site
+            ip, ret_msg = listening_q.get()
+            # send the msg to the client
+            send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port)
+            if ret_msg == "dc":
+                del port_stations[port]
+                break
 
 
 def send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port):
@@ -217,18 +228,27 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
 
                 # if secure connection and client already connected
                 else:
-                    code = "19"
+                    port = client_browser[client_address][1]
                     # get the route of the msgs to the specific site
                     stations_for_msg = port_stations[port][0]
 
-                    # get the StationCom object of the fisrt station
+                    # get the StationCom object of the first station
                     sending_client = port_stations[port][1]
 
-                   
+                    # building a temporary ip_key list
+                    ip_key_list = []
+                    for i in range(len(stations_for_msg)):
+                        ip_key_list.append((stations_for_msg[i], ip_key_dict[stations_for_msg[i]]))
+
+                    # building all layers on top of the msg
+                    msg = OnionServer.buildLayerAllHTTPS(msg, ip_key_list, client_browser[client_address])
+
+                    # send to the first station the msg
+                    sending_client.sendMsg(msg)
 
             # if there is a msg to send back
             if not ret_msg_queue.empty():
-                # get  the ip and the msg to return
+                # get the ip and the msg to return
                 (client_address, msg, code, port) = ret_msg_queue.get()
                 print("CLIENT ADDRESS - ", client_address, "RETMSG- ", msg, "CODE - ", code)
                 if code == '18':
@@ -244,7 +264,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                     proxy_server.disconnect(client_address)
 
                 elif code == '20':
-                    pass
+                    proxy_server.sendMsg(client_address, msg)
 
 
 def manager_comms(manager_server_q, manager_server):

@@ -18,6 +18,27 @@ def buildLayer(msg, ip,lastIP, key):
     return new_msg.decode()
 
 
+def buildLayerConnect(msg, ip, lastIP, browserPort, key):
+    """
+
+    :param msg: msg to move on
+    :param ip: ip of next station
+    :param lastIP: IP of the site
+    :param key: (AESCipher) key
+    :return: builds a layer on top of the msg
+    """
+
+    new_msg = ServerProtocol.buildConnectMsg(ip, lastIP, browserPort, msg)
+    new_msg = key.encrypt(new_msg)
+    return new_msg.decode()
+
+
+def buildLayerHTTPS(msg, ip, lastIP, key):
+    new_msg = ServerProtocol.buildSendMsg(msg, ip, lastIP)
+    new_msg = key.encrypt(new_msg)
+    return new_msg.decode()
+
+
 def removeLayer(msg, key):
     """
 
@@ -27,7 +48,7 @@ def removeLayer(msg, key):
     """
     new_msg = key.decrypt(msg)
     data = ServerProtocol.unpack(new_msg)
-    return data[1]
+    return data
 
 
 def removeLayerAll(msg, key_list):
@@ -39,9 +60,9 @@ def removeLayerAll(msg, key_list):
     """
 
     for key in reversed(key_list):
-        msg = removeLayer(msg, key)
+        code, msg = removeLayer(msg, key)
 
-    return msg
+    return (code, msg)
 
 
 def buildLayerAll(msg,ip_key_list, lastIP):
@@ -56,21 +77,50 @@ def buildLayerAll(msg,ip_key_list, lastIP):
 
     data = buildLayer(msg, lastIP, lastIP, ip_key_list[len(ip_key_list)-1][1])
     # build all the layers except the first and last station
-    for index in range(len(ip_key_list)-2,0,-1):
+    for index in range(len(ip_key_list)-2, 0, -1):
         # build layer
-        data = buildLayer(data, ip_key_list[index+1][0], lastIP, ip_key_list[index][1])
+        data = buildLayerConnect(data, ip_key_list[index+1][0], lastIP, ip_key_list[index][1])
     # first station encryption goes last
     data = buildLayer(data, ip_key_list[1][0], lastIP, ip_key_list[0][1])
 
     return data
 
 
+def buildLayerAllConnect(msg, ip_key_list, lastIP, broswerPort):
+    """
+
+   :param msg: msg to encrypt
+   :param ip_key_list: list of tuples that have (ip, key)
+   :param lastIP: ip of site
+   :return: builds all the layers of the msg by all the ips and keys
+   """
+    # last station enryption go first
+
+    data = buildLayerConnect(msg, lastIP, lastIP, broswerPort, ip_key_list[len(ip_key_list) - 1][1])
+    # build all the layers except the first and last station
+    for index in range(len(ip_key_list) - 2, 0, -1):
+        # build layer
+        data = buildLayerConnect(data, ip_key_list[index + 1][0], lastIP, broswerPort, ip_key_list[index][1])
+    # first station encryption goes last
+    data = buildLayerConnect(data, ip_key_list[1][0], lastIP, broswerPort, ip_key_list[0][1])
+
+    return data
+
 def main():
     pass
-    # myKey = AESClass.AESCipher("lobatuhkama")
-    # myKey2 = AESClass.AESCipher("lobatuhkama2")
-    # myKey3 = AESClass.AESCipher("lobatuhkama3")
-    # msg = "GET ME PIZZA"
+    myKey = AESClass.AESCipher("lobatuhkama")
+    myKey2 = AESClass.AESCipher("lobatuhkama2")
+    myKey3 = AESClass.AESCipher("lobatuhkama3")
+    msg = "CONNECT ME PIZZA"
+
+    ip1 = "192.168.1.1"
+    ip2 = "192.168.1.2"
+    ip3 = "192.168.1.3"
+    last_ip = "188.188.1.12"
+    print(buildLayerConnect(msg, ip1, last_ip, 443, myKey))
+    ip_key_list = [(ip1, myKey), (ip2, myKey2), (ip3, myKey3)]
+
+    print(buildLayerAllConnect(msg, ip_key_list, last_ip, 443))
     # # ip = "10.0.0.7"
     # # lastIP = "11.0.7.110"
     # # enc_msg = buildLayer(msg, ip, lastIP, myKey)

@@ -19,27 +19,40 @@ def send_and_receive_site(site_IP, msg):
     :param msg: The msg to the to the site
     :return: returns the data from the response packet of the server
     """
-
     # create the socket connection to the site
     socket_to_site = socket.socket()
-    socket_to_site.connect((site_IP, 80))
-    socket_to_site.send(msg.encode())
-    msg = bytearray()
-    while True:
-        rlist, wlist, xlist = select.select([socket_to_site],[],[])
-        if rlist:
-            try:
-                data = socket_to_site.recv(1024)
-            except:
+    try:
+        socket_to_site.connect((site_IP, 80))
+        socket_to_site.send(msg.encode())
+    except:
+        msg = bytearray()
+    else:
+        while True:
+            rlist, wlist, xlist = select.select([socket_to_site],[],[])
+            if rlist:
+                try:
+                    data = socket_to_site.recv(1024)
+                except:
+                    msg = bytearray()
+                    break
+                if data == b'':
+                    break
+                msg.extend(data)
+            else:
                 break
-
-            if data == b'':
-                break
-            msg.extend(data)
-        else:
-            break
 
     return msg
+
+
+def send_and_Connect_site(site_IP):
+    socket_to_site = socket.socket()
+    try:
+        socket_to_site.connect((site_IP, 443))
+    except:
+        return 'False'
+    else:
+        browsers[site_IP] = (socket_to_site)
+        return 'True'
 
 
 def open_listening_server(port):
@@ -72,13 +85,22 @@ def open_listening_server(port):
     next_station = data[1][0]
     site_IP = data[1][1]
     msg = data[1][2]
+    if code == '06':
+        site_port = 80
+    elif code == '17':
+        site_port = 443
     previous_port = port
-
     # if the next station is the site, needs to send on port 80
     print("NEXT STATION - " + str(next_station), "SITE_IP - " + str(site_IP))
     # in case the next station is the site
     if next_station == site_IP:
-        data = send_and_receive_site(site_IP, msg)
+        if code == '06':
+            data = send_and_receive_site(site_IP, msg)
+        elif code == '17':
+            data = send_and_Connect_site(site_IP)
+
+        if msg == bytearray():
+            listening_server.close_server()
 
     # next station is a normal station
     else:
@@ -94,7 +116,10 @@ def open_listening_server(port):
 
     # build a layer on top of the returning msg
     print("BEFORE ENC", data)
-    ret_msg = OnionStation.buildLayer(data, sym_key)
+    if site_port == 80:
+        ret_msg = OnionStation.buildLayer(data, sym_key)
+    elif site_port == 443:
+        ret_msg = OnionStation.buildLayerConnect(site_IP, 443, sym_key)
     print("ENC", ret_msg)
 
     # send the msg to the previous station
@@ -117,6 +142,8 @@ print("msg", msg)
 client.sendMsg(msg)
 # create public and private keys
 rsa_keys = RSAClass.RSAClass()
+# list of all the browsers sockets
+browsers = {}   # siteIP:siteSocket
 # get the public key
 public_key = rsa_keys.get_public_key_pem().decode()
 

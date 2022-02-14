@@ -19,6 +19,7 @@ class StationComs(object):
         # connecting to the server
         self.__sock.connect((self.__ip, self.__port))   
         self.__bufferSize = 1024    # buffer size
+        self.__running = True
         # start receiving
         threading.Thread(target=self.__receive).start()
 
@@ -27,7 +28,7 @@ class StationComs(object):
 
         :return: receives from the socket and puts in the queue of the station
         """
-        while True:
+        while self.__running:
             # recieve the length
             try:
                 length = self.__sock.recv(8).decode()
@@ -77,7 +78,13 @@ class StationComs(object):
             print(e, 56)
             self.__sock.close()
 
+    def closeAll(self):
+        """
 
+        :return: closes everything
+        """
+        self.__running = False
+        self.__sock.close()
 def main():
     pass
     # myQ = queue.Queue()

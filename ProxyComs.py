@@ -37,7 +37,7 @@ class ProxyComs(object):
                     if current_socket is self.__serverSock:
                         # new client
                         client, address = self.__serverSock.accept()
-                        print(f'{address} - connected to proxy')
+                        # print(f'{address} - connected to proxy')
                         # add to dictionary
                         self.__users_dict[client] = address
                         self.__open_clients[address] = client
@@ -49,7 +49,6 @@ class ProxyComs(object):
                             try:
                                 data = current_socket.recv(self.__bufferSize)
                             except Exception as e:
-                                print(e,3)
                                 if current_socket in self.__users_dict.keys():
                                     self.disconnect(self.__users_dict[current_socket])
 
@@ -66,7 +65,6 @@ class ProxyComs(object):
                             if current_socket in self.__users_dict.keys():
                                 self.disconnect(self.__users_dict[current_socket])
                         else:
-                            print(msg)
                             # put into server queue
                             self.__serverQueue.put((self.__users_dict[current_socket], msg))
 
@@ -98,7 +96,7 @@ class ProxyComs(object):
         """
         if address in self.__open_clients.keys():
             try:
-                print(f"{address} disconnected")
+                # print(f"{address} disconnected")
                 self.__open_clients[address].close()
                 del self.__users_dict[self.__open_clients[address]]
                 del self.__open_clients[address]

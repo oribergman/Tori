@@ -41,6 +41,10 @@ def wait_for_ok(stations_for_msg, port, station_server, station_server_q, ip_key
             station_server.sendMsg(station_ip, chosen_port)
             # wait for ok
             ip, data = station_server_q.get()
+            if str(data) == "dc":
+                disconnectedIP = ip
+                del ip_key_dict[disconnectedIP]
+                sys.exit()
             ok_msg = ip_key_dict[station_ip].decrypt(data)
             code, ok_msg = ServerProtocol.unpack(ok_msg)
             # received OK
@@ -177,7 +181,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list):
             if not ret_msg_queue.empty():
                 # get  the ip and the msg to return
                 (clientIP, msg) = ret_msg_queue.get()
-                print("CLIENT ip - ", client_address, "RETMSG- ", msg)
+                print("CLIENT address - ", client_address, "RETMSG- ", msg)
                 # return the msg to the client
                 proxy_server.sendMsg(client_address, msg)
                 # disconnect the client

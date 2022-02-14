@@ -65,7 +65,7 @@ class ServerComs(object):
                                     try:
                                         data = current_socket.recv(self.__bufferSize)
                                     except Exception as e:
-                                        print(e)
+                                        print(e, 2)
                                         self.disconnect(self.__users_dict[current_socket][0])
                                     else:
                                         msg.extend(data)
@@ -104,6 +104,9 @@ class ServerComs(object):
                 del self.__open_clients[ip]
             except:
                 pass
+            else:
+                print("DC, IP-", ip)
+                self.__serverQueue.put((ip, f"dc"))
 
     def close_server(self):
         """

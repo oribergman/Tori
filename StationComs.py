@@ -32,7 +32,7 @@ class StationComs(object):
             try:
                 length = self.__sock.recv(8).decode()
             except Exception as e:
-                print(e)
+                print(e,58)
                 self.__sock.close()
                 break
             else:
@@ -50,7 +50,7 @@ class StationComs(object):
                     try:
                         data = self.__sock.recv(self.__bufferSize)
                     except Exception as e:
-                        print(e)
+                        print(e, 55)
                         self.__sock.close()
                         break
                     else:
@@ -74,7 +74,7 @@ class StationComs(object):
         try:
             self.__sock.send(length_msg+msg)
         except Exception as e:
-            print(e)
+            print(e, 56)
             self.__sock.close()
 
 

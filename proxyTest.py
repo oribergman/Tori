@@ -171,35 +171,36 @@ while True:
                     else:
                         msg = msg.decode()
                         msgSplit = msg.split()
-                        address = msgSplit[1]
+                        if len(msgSplit) > 1:
+                            address = msgSplit[1]
 
-                        if msg.startswith('CONNECT'):
-                            if address.split(':')[1].isnumeric():
-                                browserLink, browserPort = address.split(':')
-                                browserPort = int(browserPort)
-                                browserIP = socket.gethostbyname(browserLink)
-                                address = (browserIP, browserPort)
-                                # connect to the site
-                                browserSocket = socket.socket()
-                                print(address)
-                                try:
-                                    browserSocket.connect((browserIP, browserPort))
-                                except:
-                                    disconnect(users_dict[current_socket])
+                            if msg.startswith('CONNECT'):
+                                if address.split(':')[1].isnumeric():
+                                    browserLink, browserPort = address.split(':')
+                                    browserPort = int(browserPort)
+                                    browserIP = socket.gethostbyname(browserLink)
+                                    address = (browserIP, browserPort)
+                                    # connect to the site
+                                    browserSocket = socket.socket()
+                                    print(address)
+                                    try:
+                                        browserSocket.connect((browserIP, browserPort))
+                                    except:
+                                        disconnect(users_dict[current_socket])
+                                    else:
+                                        waiting_clients[current_socket] = browserSocket
+                                        browsers_clients[browserSocket] = current_socket
+                                        msg_ret = "HTTP/1.1 200 Connection established\r\n\r\n"
+                                        sendMsg(users_dict[current_socket], msg_ret)
                                 else:
-                                    waiting_clients[current_socket] = browserSocket
-                                    browsers_clients[browserSocket] = current_socket
-                                    msg_ret = "HTTP/1.1 200 Connection established\r\n\r\n"
-                                    sendMsg(users_dict[current_socket], msg_ret)
+                                    disconnect(users_dict[current_socket])
+
+                            elif msg.startswith('POST') or msg.startswith('GET') or msg.startswith("HEAD") or msg.startswith("PUT") or msg.startswith("DELETE") or msg.startswith("OPTIONS"):
+                                address = msg.split('/')[2]
+                                threading.Thread(target=httpGet, args= (address, current_socket, msg)).start()
+
                             else:
                                 disconnect(users_dict[current_socket])
-
-                        elif msg.startswith('POST') or msg.startswith('GET') or msg.startswith("HEAD") or msg.startswith("PUT") or msg.startswith("DELETE") or msg.startswith("OPTIONS"):
-                            address = msg.split('/')[2]
-                            threading.Thread(target=httpGet, args= (address, current_socket, msg)).start()
-
-                        else:
-                            disconnect(users_dict[current_socket])
 
 
 

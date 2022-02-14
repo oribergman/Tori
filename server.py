@@ -72,6 +72,7 @@ def handle_send_receive_msg(data, port, client_port, dst_ip, stations, ret_msg_q
 
     # creating sending client
     sending_q = queue.Queue()
+    print("Connecting to ", stations[0], port)
     sending_client = StationComs.StationComs(port, stations[0], sending_q)
 
     # creating the list of tuples containing the ip and the key
@@ -438,7 +439,7 @@ while True:
                 station_per_msg = get_station_num()
                 if len(ip_key_dict) >= station_per_msg and not initialized_proxy:
                     initialized_proxy = True
-                    threading.Thread(target=proxy, args=(ip_key_dict, station_server, )).start()
+                    threading.Thread(target=proxy, args=(ip_key_dict, station_server, station_server_q, port_list)).start()
 
         else:
             # if the communication is not permitted , kick the ip off the server

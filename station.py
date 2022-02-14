@@ -28,7 +28,11 @@ def send_and_receive_site(site_IP, msg):
     while True:
         rlist, wlist, xlist = select.select([socket_to_site],[],[])
         if rlist:
-            data = socket_to_site.recv(1024)
+            try:
+                data = socket_to_site.recv(1024)
+            except:
+                break
+
             if data == b'':
                 break
             msg.extend(data)

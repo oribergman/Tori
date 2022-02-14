@@ -79,15 +79,16 @@ class ServerComs(object):
         :param msg: msg to send
         :return:
         """
-        sock = self.__open_clients[ip]
-        if type(msg) == str:
-            msg = msg.encode()
-        length = str(len(msg)).zfill(8).encode()
-        try:
-            sock.send(length+msg)
-        except Exception as e:
-            print(e,1)
-            self.disconnect(ip)
+        if ip in self.__open_clients.keys():
+            sock = self.__open_clients[ip]
+            if type(msg) == str:
+                msg = msg.encode()
+            length = str(len(msg)).zfill(8).encode()
+            try:
+                sock.send(length+msg)
+            except Exception as e:
+                print(e,1)
+                self.disconnect(ip)
 
     def disconnect(self, ip):
         """
@@ -95,7 +96,6 @@ class ServerComs(object):
         :param ip: ip address
         disconnects the socket of the ip from the server
         """
-        print(self.__open_clients.keys())
         if ip in self.__open_clients.keys():
             print(f"{self.__users_dict[self.__open_clients[ip]]} disconnected")
             self.__open_clients[ip].close()

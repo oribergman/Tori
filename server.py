@@ -224,7 +224,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                     # get the StationCom object of the fisrt station
                     sending_client = port_stations[port][1]
 
-                   
+
 
             # if there is a msg to send back
             if not ret_msg_queue.empty():

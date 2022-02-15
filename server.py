@@ -39,7 +39,6 @@ def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q,
             # encrypt
             chosen_port = ip_key_dict[station_ip].encrypt(chosen_port)
             # send the port
-            print("SENDING TO ", station_ip, chosen_port)
             station_server.sendMsg(station_ip, chosen_port)
             # wait for ok
             ip, data = station_server_q.get()
@@ -51,7 +50,7 @@ def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q,
             # received OK
             if code == "05":
                 received_ok = True
-                print("GOT OK FROM", ip)
+                # print("GOT OK FROM", ip)
 
 
     # after the stations servers are up save the data on the msg
@@ -74,14 +73,17 @@ def handle_send_receive_msg(data, port, client_address, dst_ip, browserPort, sta
     :param stations: list of the chosen stations for sending the msg
     sends the msg to the first station and receives response
     """
-    print(code)
+    # print(code)
     # creating listening server
     listening_q = queue.Queue()
     listenting_server = ServerComs.ServerComs(int(port), listening_q)
 
     # creating sending client
     sending_q = queue.Queue()
-    sending_client = StationComs.StationComs(port, stations[0], sending_q)
+    try:
+        sending_client = StationComs.StationComs(port, stations[0], sending_q)
+    except:
+        sys.exit()
 
     # creating the list of tuples containing the ip and the key
     ip_key_list = []
@@ -163,8 +165,8 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                     #     proxy_server.disconnect(client_address)
                     # if its a normal http request
                     if msg.startswith("GET") or msg.startswith("POST") or msg.startswith("HEAD") or msg.startswith("PUT") or msg.startswith("DELETE") or msg.startswith("OPTIONS"):
-                        print("HTTP")
-                        print(msg)
+                        #print("HTTP")
+                        #print(msg)
                         # extract the url
                         url = msg.split("/")[2]
                         # get the ip of the url
@@ -233,6 +235,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
 
                 # if secure connection and client already connected
                 else:
+                    print("enc data from client", msg)
                     port = client_browser[client_address][1]
                     # get the route of the msgs to the specific site
                     stations_for_msg = port_stations[port][0]
@@ -246,7 +249,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                         ip_key_list.append((stations_for_msg[i], ip_key_dict[stations_for_msg[i]]))
 
                     # building all layers on top of the msg
-                    msg = OnionServer.buildLayerAllHTTPS(msg, ip_key_list, client_browser[client_address])
+                    msg = OnionServer.buildLayerAllHTTPS(msg, ip_key_list)
 
                     # send to the first station the msg
                     sending_client.sendMsg(msg)
@@ -257,6 +260,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                 (client_address, msg, code, port) = ret_msg_queue.get()
                 print("CLIENT ADDRESS - ", client_address, "RETMSG- ", msg, "CODE - ", code)
                 if code == '18':
+                    print("SENT ESTBLISHED")
                     msg = "HTTP/1.1 200 Connection established\r\n\r\n"
                     client_browser[client_address] = (browserIP, port)
                     # return the msg to the client
@@ -386,6 +390,8 @@ def roll_port():
         # check if port not in use
         ##if not port in port_dict.keys():
         if not port in port_list:
+            print(port)
+            print(port_list)
             found = True
 
     port_list.append(port)

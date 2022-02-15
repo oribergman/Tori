@@ -49,14 +49,15 @@ def buildSendMsgRet(msg):
     return msg
 
 
-def buildSendEstablished(browserIP, browserPort):
+def buildSendEstablished(browserIP, browserPort, msg):
 
     code = "18"
 
     lenIP = str(len(browserIP)).zfill(2)
     lenPort = str(len(str(browserPort))).zfill(1)
+    lenMsg = str(len(str(msg))).zfill(8)
 
-    msg = code + lenIP + browserIP + lenPort + str(browserPort)
+    msg = code + lenIP + browserIP + lenPort + str(browserPort) + lenMsg + str(msg)
 
     return msg
 
@@ -133,7 +134,7 @@ def unpack(msg):
         data = (IP1, IP2, Port, new_msg)
 
     elif code == '19':
-        lenMsg = msg[0:8]
+        lenMsg = int(msg[0:8])
         data = msg[8:8 + lenMsg]
 
     return (code, data)

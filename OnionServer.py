@@ -65,11 +65,12 @@ def removeLayerAll(msg, key_list):
     :return: removes all the layer from the msg
     """
     count = 3
-    print(f"KEY LIST {len(key_list)}")
     for key in reversed(key_list):
-    # for key in key_list:
         print("DECRYPTING", count)
         code, msg = removeLayer(msg, key)
+        if code == "18":
+            msg = msg[2]
+
         print("GOT", msg)
         count = count - 1
 

@@ -46,6 +46,7 @@ def send_and_receive_site(site_IP, msg):
 
 def receive_HTTPS(socket_to_site, previous_com, sym_key):
     receiving = True
+
     while receiving:
         msg = bytearray()
         while True:
@@ -55,6 +56,7 @@ def receive_HTTPS(socket_to_site, previous_com, sym_key):
                     data = socket_to_site.recv(1024)
                 except:
                     msg = bytearray()
+                    receiving = False
                     break
                 if data == b'':
                     break
@@ -62,7 +64,8 @@ def receive_HTTPS(socket_to_site, previous_com, sym_key):
             else:
                 break
 
-        if data != b'':
+        if msg != bytearray():
+            print("enc data from site", msg)
             msg = OnionStation.buildLayerHTTPS(msg, sym_key)
 
             previous_com.sendMsg(msg)
@@ -96,7 +99,7 @@ def send_and_Connect_site(site_IP, listening_q, previous_station, previous_port,
         # receiving thread from server (sends to previous station)
         threading.Thread(target=receive_HTTPS, args=(socket_to_site, previous_com, sym_key, )).start()
         # receiving thread from stations (sends to server)
-        threading.Thread(target=send_HTTPS, args=(listening_q, sym_key, previous_com, )).start()
+        threading.Thread(target=send_HTTPS, args=(listening_q, sym_key, socket_to_site, )).start()
         return 'True'
 
 
@@ -148,7 +151,7 @@ def open_listening_server(port):
     :param port: the port to listen on
     :return: opens a listening server on the port receives and sends the data forward
     """
-    print(port)
+    # print(port)
     # listen for the msg
     listening_q = queue.Queue()
     listening_server = ServerComs.ServerComs(port, listening_q)
@@ -164,10 +167,10 @@ def open_listening_server(port):
 
     # receive the msg from another station/the server
     previous_station, msg = listening_q.get()
-    print("RECEIVED FROM ", previous_station, msg)
+    # print("RECEIVED FROM ", previous_station, msg)
     # remove one layer
     data = OnionStation.remove_layer(msg, sym_key)
-    print("received data- " + str(data))
+    print("received data- " + str(data), "FROM", previous_station)
 
     # extract the info
     code = data[0]
@@ -215,15 +218,14 @@ def open_listening_server(port):
             sys.exit()
         connected = "True"
 
-   
     if code == "06":
         ret_msg = OnionStation.buildLayer(data, sym_key)
     elif code == "17" and connected == "True":
-        ret_msg = OnionStation.buildLayerConnect(site_IP, 443, sym_key)
+        ret_msg = OnionStation.buildLayerConnect(site_IP, 443, sym_key, data)
     else:
         sys.exit()
     # send the msg to the previous station
-    print("sending to", previous_station, ret_msg )
+    print("sending to previous", previous_station, ret_msg)
     sending_client_previous.sendMsg(ret_msg)
 
 
@@ -277,7 +279,7 @@ while True:
     data = first_con_q.get()
     data = sym_key.decrypt(data)
     code, msg = StationProtocol.unpack(data)
-    print("data = " + str(data), "code = " + str(code))
+    # print("data = " + str(data), "code = " + str(code))
     # the server has sent port
     if code == "04":
         port = msg

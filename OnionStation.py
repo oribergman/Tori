@@ -25,10 +25,11 @@ def buildLayerHTTPS(msg, key):
     return new_msg.decode()
 
 
-def buildLayerConnect(browserIP, browserPort, key):
-    new_msg = StationProtocol.buildSendEstablished(browserIP, browserPort)
+def buildLayerConnect(browserIP, browserPort, key, msg):
+    print("MSG BEFORE", msg)
+    new_msg = StationProtocol.buildSendEstablished(browserIP, browserPort, msg)
     new_msg = key.encrypt(new_msg)
-
+    print("MSG AFTER", new_msg)
     return new_msg.decode()
 
 
@@ -39,10 +40,9 @@ def remove_layer(msg, key):
     :param key: the key to decrypt the data with
     :return: the msg after the decryption and after the protocol translation
     """
-    print("MSG TO DECRYPT" , msg)
     new_msg = key.decrypt(msg)
-    data = StationProtocol.unpack(new_msg)
-    return data
+    new_msg = StationProtocol.unpack(new_msg)
+    return new_msg
 
 
 def main():

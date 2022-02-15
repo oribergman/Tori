@@ -33,8 +33,14 @@ def buildLayerConnect(msg, ip, lastIP, browserPort, key):
     return new_msg.decode()
 
 
-def buildLayerHTTPS(msg, ip, lastIP, key):
-    new_msg = ServerProtocol.buildSendMsg(msg, ip, lastIP)
+def buildLayerHTTPS(msg, key):
+    """
+
+    :param msg: msg to deliver
+    :param key: symetric key of station
+    :return: builds protocol msg for sending https msg and encrypts the data
+    """
+    new_msg = ServerProtocol.buildSendMsgHTTPS(msg)
     new_msg = key.encrypt(new_msg)
     return new_msg.decode()
 
@@ -58,9 +64,14 @@ def removeLayerAll(msg, key_list):
     :param key_list: list of keys to decrypt the msg (must be in order)
     :return: removes all the layer from the msg
     """
-
+    count = 3
+    print(f"KEY LIST {len(key_list)}")
     for key in reversed(key_list):
+    # for key in key_list:
+        print("DECRYPTING", count)
         code, msg = removeLayer(msg, key)
+        print("GOT", msg)
+        count = count - 1
 
     return (code, msg)
 
@@ -79,7 +90,7 @@ def buildLayerAll(msg,ip_key_list, lastIP):
     # build all the layers except the first and last station
     for index in range(len(ip_key_list)-2, 0, -1):
         # build layer
-        data = buildLayerConnect(data, ip_key_list[index+1][0], lastIP, ip_key_list[index][1])
+        data = buildLayer(data, ip_key_list[index+1][0], lastIP, ip_key_list[index][1])
     # first station encryption goes last
     data = buildLayer(data, ip_key_list[1][0], lastIP, ip_key_list[0][1])
 
@@ -94,8 +105,8 @@ def buildLayerAllConnect(msg, ip_key_list, lastIP, broswerPort):
    :param lastIP: ip of site
    :return: builds all the layers of the msg by all the ips and keys
    """
-    # last station enryption go first
 
+    # last station enryption go first
     data = buildLayerConnect(msg, lastIP, lastIP, broswerPort, ip_key_list[len(ip_key_list) - 1][1])
     # build all the layers except the first and last station
     for index in range(len(ip_key_list) - 2, 0, -1):
@@ -105,6 +116,20 @@ def buildLayerAllConnect(msg, ip_key_list, lastIP, broswerPort):
     data = buildLayerConnect(data, ip_key_list[1][0], lastIP, broswerPort, ip_key_list[0][1])
 
     return data
+
+
+def buildLayerAllHTTPS(msg, ip_key_list):
+    # last station enryption go first
+    data = buildLayerHTTPS(msg, ip_key_list[len(ip_key_list) - 1][1])
+    # build all the layers except the first and last station
+    for index in range(len(ip_key_list) - 2, 0, -1):
+        # build layer
+        data = buildLayerHTTPS(data, ip_key_list[index][1])
+    # first station encryption goes last
+    data = buildLayerHTTPS(data, ip_key_list[0][1])
+
+    return data
+
 
 def main():
     pass

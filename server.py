@@ -12,7 +12,7 @@ import OnionServer
 import ProxyComs
 
 
-def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q, ip_key_dict, port_list, client_address,dst_ip, ret_msg_queue, msg, code, port_stations):
+def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q, ip_key_dict, port_list, client_address,dst_ip, ret_msg_queue, msg, codeMsg, port_stations, browserPort):
     """
 
     :param station_for_msg: all the stations for the specific msg
@@ -39,6 +39,7 @@ def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q,
             # encrypt
             chosen_port = ip_key_dict[station_ip].encrypt(chosen_port)
             # send the port
+            print("SENDING TO ", station_ip, chosen_port)
             station_server.sendMsg(station_ip, chosen_port)
             # wait for ok
             ip, data = station_server_q.get()
@@ -55,11 +56,11 @@ def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q,
 
     # after the stations servers are up save the data on the msg
     # port_dict[chosen_port] = (client_address, dst_ip, stations_for_msg)
-    port_list.append(sendingPort)
+    # port_list.append(sendingPort)
 
     # open the code that sends the msg
     #threading.Thread(target=handle_send_receive_msg, args=(msg, port, client_address, dst_ip, stations_for_msg, ret_msg_queue)).start()
-    handle_send_receive_msg(msg, sendingPort, client_address, dst_ip, stations_for_msg, ret_msg_queue, code, port_stations)
+    handle_send_receive_msg(msg, sendingPort, client_address, dst_ip, browserPort, stations_for_msg, ret_msg_queue, codeMsg, port_stations)
 
 
 def handle_send_receive_msg(data, port, client_address, dst_ip, browserPort, stations, ret_msg_queue, code, port_stations):
@@ -73,6 +74,7 @@ def handle_send_receive_msg(data, port, client_address, dst_ip, browserPort, sta
     :param stations: list of the chosen stations for sending the msg
     sends the msg to the first station and receives response
     """
+    print(code)
     # creating listening server
     listening_q = queue.Queue()
     listenting_server = ServerComs.ServerComs(int(port), listening_q)
@@ -102,10 +104,22 @@ def handle_send_receive_msg(data, port, client_address, dst_ip, browserPort, sta
     ip, ret_msg = listening_q.get()
     # remove the port from the used ports
     port_list.remove(port)
-    # close the temporally server
-    listenting_server.close_server()
+    if code != "17":
+        # close the temporally server
+        listenting_server.close_server()
+
     # send msg back to client
     send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port)
+
+    if code == "17":
+        while True:
+            # wait for the returning msg from the site
+            ip, ret_msg = listening_q.get()
+            # send the msg to the client
+            send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port)
+            if ret_msg == "dc":
+                del port_stations[port]
+                break
 
 
 def send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port):
@@ -149,6 +163,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                     #     proxy_server.disconnect(client_address)
                     # if its a normal http request
                     if msg.startswith("GET") or msg.startswith("POST") or msg.startswith("HEAD") or msg.startswith("PUT") or msg.startswith("DELETE") or msg.startswith("OPTIONS"):
+                        print("HTTP")
                         print(msg)
                         # extract the url
                         url = msg.split("/")[2]
@@ -167,7 +182,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                             port = roll_port()
                             code = "06"
                             # wait for ok
-                            threading.Thread(target=wait_for_ok, args=(stations_for_msg, port, station_server, station_server_q, ip_key_dict, port_list, client_address, dst_ip, ret_msg_queue, msg, code)).start()
+                            threading.Thread(target=wait_for_ok, args=(stations_for_msg, port, station_server, station_server_q, ip_key_dict, port_list, client_address, dst_ip, ret_msg_queue, msg, code, port_stations, "80")).start()
                             # # send the port to all the stations and wait for the accept
                             # for station_ip in stations_for_msg:
                             #
@@ -196,6 +211,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
 
                     # client want to open tunnel
                     elif msg.startswith('CONNECT'):
+                        print("CONNECT", msg)
                         msgSplit = msg.split()
                         address = msgSplit[1]
                         if address.split(':')[1].isnumeric():
@@ -213,22 +229,31 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
 
                                 code = "17"
                                 # deliver the msg
-                                threading.Thread(target=wait_for_ok, args=(stations_for_msg, sendingPort, station_server, station_server_q, ip_key_dict, port_list, client_address, browserIP, ret_msg_queue, msg, code)).start()
+                                threading.Thread(target=wait_for_ok, args=(stations_for_msg, sendingPort, station_server, station_server_q, ip_key_dict, port_list, client_address, browserIP, ret_msg_queue, msg, code, port_stations, browserPort)).start()
 
                 # if secure connection and client already connected
                 else:
-                    code = "19"
+                    port = client_browser[client_address][1]
                     # get the route of the msgs to the specific site
                     stations_for_msg = port_stations[port][0]
 
-                    # get the StationCom object of the fisrt station
+                    # get the StationCom object of the first station
                     sending_client = port_stations[port][1]
 
+                    # building a temporary ip_key list
+                    ip_key_list = []
+                    for i in range(len(stations_for_msg)):
+                        ip_key_list.append((stations_for_msg[i], ip_key_dict[stations_for_msg[i]]))
 
+                    # building all layers on top of the msg
+                    msg = OnionServer.buildLayerAllHTTPS(msg, ip_key_list, client_browser[client_address])
+
+                    # send to the first station the msg
+                    sending_client.sendMsg(msg)
 
             # if there is a msg to send back
             if not ret_msg_queue.empty():
-                # get  the ip and the msg to return
+                # get the ip and the msg to return
                 (client_address, msg, code, port) = ret_msg_queue.get()
                 print("CLIENT ADDRESS - ", client_address, "RETMSG- ", msg, "CODE - ", code)
                 if code == '18':
@@ -244,7 +269,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                     proxy_server.disconnect(client_address)
 
                 elif code == '20':
-                    pass
+                    proxy_server.sendMsg(client_address, msg)
 
 
 def manager_comms(manager_server_q, manager_server):
@@ -362,6 +387,8 @@ def roll_port():
         ##if not port in port_dict.keys():
         if not port in port_list:
             found = True
+
+    port_list.append(port)
     return port
 
 
@@ -504,7 +531,8 @@ while True:
                 station_per_msg = get_station_num()
                 if len(ip_key_dict) >= station_per_msg and not initialized_proxy:
                     initialized_proxy = True
-                    threading.Thread(target=proxy, args=(ip_key_dict, station_server, client_browser, port_stations)).start()
+
+                    threading.Thread(target=proxy, args=(ip_key_dict, station_server, station_server_q, port_list, client_browser, port_stations)).start()
 
         else:
             # if the communication is not permitted , kick the ip off the server

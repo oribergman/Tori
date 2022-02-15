@@ -154,17 +154,14 @@ def buildConnectMsg(clientIP, browserIP, browserPort, msg):
     return ret_msg
 
 
-def buildSendMsgHTTPS(msg, passto, lastip):
+def buildSendMsgHTTPS(msg):
     code = "19"
-    lenIP1 = str(len(passto)).zfill(2)
 
-    lenIP2 = str(len(lastip)).zfill(2)
+    lenMsg = str(len(msg)).zfill(8)
 
-    length_msg = str(len(msg)).zfill(8)
+    msg = code + lenMsg + str(msg)
 
-    new_msg = code + lenIP1 + passto + lenIP2 + lastip + length_msg + str(msg)
-
-    return new_msg
+    return msg
 
 
 def unpack(msg):
@@ -223,6 +220,10 @@ def unpack(msg):
         Port = msg[1:lenPort + 1]
 
         data = (IP1, Port)
+
+    elif code == "20":
+        lenMsg = msg[0:8]
+        data = msg[8:8+lenMsg]
 
     return (code, data)
 

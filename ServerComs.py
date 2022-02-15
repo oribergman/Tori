@@ -112,7 +112,8 @@ class ServerComs(object):
         """
         closes the server
         """
-        for sock in self.__open_clients.values():
+        sockets = self.__open_clients.values()
+        for sock in sockets:
             try:
                 sock.close()
             except:

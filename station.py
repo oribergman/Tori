@@ -38,6 +38,8 @@ def send_and_receive_site(site_IP, msg):
                 if data == b'':
                     break
                 msg.extend(data)
+                if len(data) < 1024:
+                    break
             else:
                 break
 
@@ -50,19 +52,22 @@ def receive_HTTPS(socket_to_site, previous_com, sym_key):
     while receiving:
         msg = bytearray()
         while True:
-            rlist, wlist, xlist = select.select([socket_to_site], [], [])
-            if rlist:
-                try:
-                    data = socket_to_site.recv(1024)
-                except:
-                    msg = bytearray()
-                    receiving = False
-                    break
-                if data == b'':
-                    break
-                msg.extend(data)
+            try:
+                rlist, wlist, xlist = select.select([socket_to_site], [], [])
+            except:
+                pass
             else:
-                break
+                if rlist:
+                    try:
+                        data = socket_to_site.recv(1024)
+                    except:
+                        msg = bytearray()
+                        receiving = False
+                        break
+                    else:
+                        msg.extend(data)
+                        if len(data) < 1024:
+                            break
 
         if msg != bytearray():
             print("enc data from site", msg)
@@ -227,9 +232,6 @@ def open_listening_server(port):
     # send the msg to the previous station
     print("sending to previous", previous_station, ret_msg)
     sending_client_previous.sendMsg(ret_msg)
-
-
-
 
 
 # get the mac address of the station

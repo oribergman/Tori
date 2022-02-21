@@ -80,7 +80,10 @@ def handle_send_receive_msg(data, port, client_address, dst_ip, browserPort, sta
     # print(code)
     # creating listening server
     listening_q = queue.Queue()
-    listenting_server = ServerComs.ServerComs(int(port), listening_q)
+    try:
+        listenting_server = ServerComs.ServerComs(int(port), listening_q)
+    except:
+        sys.exit()
 
     # creating sending client
     sending_q = queue.Queue()
@@ -241,7 +244,11 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
 
                 # if secure connection and client already connected
                 else:
-                    print("enc data from client", msg)
+
+                    print("enc data from client", msg, type(msg))
+
+                    msg = msg.decode()
+                    print("after decode", msg)
                     port = client_browser[client_address][1]
                     # get the route of the msgs to the specific site
                     stations_for_msg = port_stations[port][0]

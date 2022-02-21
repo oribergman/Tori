@@ -36,6 +36,7 @@ def send_and_receive_site(site_IP, msg):
                     msg = bytearray()
                     break
                 if data == b'':
+                    msg = bytearray()
                     break
                 msg.extend(data)
             else:
@@ -64,8 +65,10 @@ def receive_HTTPS(socket_to_site, previous_com, sym_key):
             else:
                 break
 
-        if msg != bytearray():
+        if msg != bytearray(b''):
             print("enc data from site", msg)
+            msg = msg.decode()
+            print(msg)
             msg = OnionStation.buildLayerHTTPS(msg, sym_key)
             print("sending previous", previous_com.ip, "from site",msg)
             previous_com.sendMsg(msg)
@@ -82,8 +85,7 @@ def send_HTTPS(listening_q, sym_key, socket_to_site):
     while True:
         previous_ip, data = listening_q.get()
         code, msg = OnionStation.remove_layer(data, sym_key)
-        
-        socket_to_site.send(msg.encode())
+        socket_to_site.send(bytearray(msg.encode()))
 
 
 def send_and_Connect_site(site_IP, listening_q, previous_station, previous_port, sym_key):
@@ -166,22 +168,30 @@ def open_listening_server(port):
     # send to the server that the station's listening server is up
     client.sendMsg(OK_msg_enc)
 
-    print("sent OK")
+    # print("sent OK")
 
     # receive the msg from another station/the server
     previous_station, msg = listening_q.get()
     # print("RECEIVED FROM ", previous_station, msg)
     # remove one layer
     data = OnionStation.remove_layer(msg, sym_key)
-    print("received data- " + str(data), "FROM", previous_station)
+    # print("received data- " + str(data), "FROM", previous_station)
 
-    # extract the info
     code = data[0]
-    next_station = data[1][0]
-    site_IP = data[1][1]
-    site_port = data[1][2]
-    msg = data[1][3]
-    print(msg)
+
+    if code == "17":
+        # extract the info
+        next_station = data[1][0]
+        site_IP = data[1][1]
+        site_port = data[1][2]
+        msg = data[1][3]
+
+    elif code == "06":
+        # extract the info
+        next_station = data[1][0]
+        site_IP = data[1][1]
+        msg = data[1][2]
+    # print(msg)
 
     previous_port = port
 
@@ -190,7 +200,7 @@ def open_listening_server(port):
     sending_client_previous = StationComs.StationComs(previous_port, previous_station, sending_q)
 
     # if the next station is the site
-    print("NEXT STATION - " + str(next_station), "SITE_IP - " + str(site_IP))
+    # print("NEXT STATION - " + str(next_station), "SITE_IP - " + str(site_IP))
     # in case the next station is the site
     if next_station == site_IP:
         if code == '06':
@@ -211,7 +221,7 @@ def open_listening_server(port):
 
         # wait for returning msg
         next_station, data = listening_q.get()
-        print("data from another station - " + str(data))
+        # print("data from another station - " + str(data))
         # connection established
         if code == "17":
             threading.Thread(target=receive_station_HTTPS, args=(
@@ -228,11 +238,8 @@ def open_listening_server(port):
     else:
         sys.exit()
     # send the msg to the previous station
-    print("sending to previous", previous_station, ret_msg)
+    # print("sending to previous", previous_station, ret_msg)
     sending_client_previous.sendMsg(ret_msg)
-
-
-
 
 
 # get the mac address of the station

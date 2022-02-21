@@ -43,6 +43,7 @@ def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q,
             # wait for ok
             ip, data = station_server_q.get()
             if str(data) == "dc":
+                port_list.remove(sendingPort)
                 del ip_key_dict[ip]
                 sys.exit()
             try:
@@ -54,12 +55,7 @@ def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q,
             # received OK
             if code == "05":
                 received_ok = True
-                # print("GOT OK FROM", ip)
-
-
-    # after the stations servers are up save the data on the msg
-    # port_dict[chosen_port] = (client_address, dst_ip, stations_for_msg)
-    # port_list.append(sendingPort)
+                print("GOT OK FROM", ip)
 
     # open the code that sends the msg
     #threading.Thread(target=handle_send_receive_msg, args=(msg, port, client_address, dst_ip, stations_for_msg, ret_msg_queue)).start()

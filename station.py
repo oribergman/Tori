@@ -39,6 +39,8 @@ def send_and_receive_site(site_IP, msg):
                     msg = bytearray()
                     break
                 msg.extend(data)
+                if len(data) < 1024:
+                    break
             else:
                 break
 
@@ -51,19 +53,22 @@ def receive_HTTPS(socket_to_site, previous_com, sym_key):
     while receiving:
         msg = bytearray()
         while True:
-            rlist, wlist, xlist = select.select([socket_to_site], [], [])
-            if rlist:
-                try:
-                    data = socket_to_site.recv(1024)
-                except:
-                    msg = bytearray()
-                    receiving = False
-                    break
-                if data == b'':
-                    break
-                msg.extend(data)
+            try:
+                rlist, wlist, xlist = select.select([socket_to_site], [], [])
+            except:
+                pass
             else:
-                break
+                if rlist:
+                    try:
+                        data = socket_to_site.recv(1024)
+                    except:
+                        msg = bytearray()
+                        receiving = False
+                        break
+                    else:
+                        msg.extend(data)
+                        if len(data) < 1024:
+                            break
 
         if msg != bytearray(b''):
             print("enc data from site", msg)

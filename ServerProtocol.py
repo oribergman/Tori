@@ -228,7 +228,7 @@ def unpack(msg):
         data = (IP1, Port, msg)
 
     elif code == "20":
-        lenMsg = msg[0:8]
+        lenMsg = int(msg[0:8])
         data = msg[8:8+lenMsg]
 
     return (code, data)

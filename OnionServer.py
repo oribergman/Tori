@@ -64,7 +64,7 @@ def removeLayerAll(msg, key_list):
     :param key_list: list of keys to decrypt the msg (must be in order)
     :return: removes all the layer from the msg
     """
-    count = 3
+    count = len(key_list)
     for key in reversed(key_list):
         print("DECRYPTING", count)
         code, msg = removeLayer(msg, key)
@@ -77,7 +77,7 @@ def removeLayerAll(msg, key_list):
     return (code, msg)
 
 
-def buildLayerAll(msg,ip_key_list, lastIP):
+def buildLayerAll(msg, ip_key_list, lastIP):
     """
 
     :param msg: msg to encrypt
@@ -86,14 +86,16 @@ def buildLayerAll(msg,ip_key_list, lastIP):
     :return: builds all the layers of the msg by all the ips and keys
     """
     # last station enryption go first
-
-    data = buildLayer(msg, lastIP, lastIP, ip_key_list[len(ip_key_list)-1][1])
-    # build all the layers except the first and last station
-    for index in range(len(ip_key_list)-2, 0, -1):
-        # build layer
-        data = buildLayer(data, ip_key_list[index+1][0], lastIP, ip_key_list[index][1])
-    # first station encryption goes last
-    data = buildLayer(data, ip_key_list[1][0], lastIP, ip_key_list[0][1])
+    if len(ip_key_list) == 1:
+        data = buildLayer(msg, lastIP, lastIP, ip_key_list[0][1])
+    else:
+        data = buildLayer(msg, lastIP, lastIP, ip_key_list[len(ip_key_list)-1][1])
+        # build all the layers except the first and last station
+        for index in range(len(ip_key_list)-2, 0, -1):
+            # build layer
+            data = buildLayer(data, ip_key_list[index+1][0], lastIP, ip_key_list[index][1])
+        # first station encryption goes last
+        data = buildLayer(data, ip_key_list[1][0], lastIP, ip_key_list[0][1])
 
     return data
 
@@ -107,14 +109,17 @@ def buildLayerAllConnect(msg, ip_key_list, lastIP, broswerPort):
    :return: builds all the layers of the msg by all the ips and keys
    """
 
-    # last station enryption go first
-    data = buildLayerConnect(msg, lastIP, lastIP, broswerPort, ip_key_list[len(ip_key_list) - 1][1])
-    # build all the layers except the first and last station
-    for index in range(len(ip_key_list) - 2, 0, -1):
-        # build layer
-        data = buildLayerConnect(data, ip_key_list[index + 1][0], lastIP, broswerPort, ip_key_list[index][1])
-    # first station encryption goes last
-    data = buildLayerConnect(data, ip_key_list[1][0], lastIP, broswerPort, ip_key_list[0][1])
+    if len(ip_key_list) == 1:
+        data = buildLayerConnect(msg, lastIP, lastIP, broswerPort, ip_key_list[0][1])
+    else:
+        # last station enryption go first
+        data = buildLayerConnect(msg, lastIP, lastIP, broswerPort, ip_key_list[len(ip_key_list) - 1][1])
+        # build all the layers except the first and last station
+        for index in range(len(ip_key_list) - 2, 0, -1):
+            # build layer
+            data = buildLayerConnect(data, ip_key_list[index + 1][0], lastIP, broswerPort, ip_key_list[index][1])
+        # first station encryption goes last
+        data = buildLayerConnect(data, ip_key_list[1][0], lastIP, broswerPort, ip_key_list[0][1])
 
     return data
 

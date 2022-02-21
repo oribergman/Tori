@@ -45,7 +45,11 @@ def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q,
             if str(data) == "dc":
                 del ip_key_dict[ip]
                 sys.exit()
-            ok_msg = ip_key_dict[station_ip].decrypt(data)
+            try:
+
+                ok_msg = ip_key_dict[station_ip].decrypt(data)
+            except:
+                print("can't decrypt", data, "with", station_ip)
             code, ok_msg = ServerProtocol.unpack(ok_msg)
             # received OK
             if code == "05":
@@ -106,9 +110,6 @@ def handle_send_receive_msg(data, port, client_address, dst_ip, browserPort, sta
     ip, ret_msg = listening_q.get()
     # remove the port from the used ports
     port_list.remove(port)
-    if code != "17":
-        # close the temporally server
-        listenting_server.close_server()
 
     # send msg back to client
     send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port)
@@ -117,11 +118,16 @@ def handle_send_receive_msg(data, port, client_address, dst_ip, browserPort, sta
         while True:
             # wait for the returning msg from the site
             ip, ret_msg = listening_q.get()
+            print("RETURNING MSG AFTER FIRST SEND", ret_msg)
             # send the msg to the client
             send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port)
             if ret_msg == "dc":
                 del port_stations[port]
                 break
+
+    else:
+        # close the temporally server
+        listenting_server.close_server()
 
 
 def send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port):
@@ -138,7 +144,7 @@ def send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port
 
     # remove all the layers
     code, ret_msg = OnionServer.removeLayerAll(ret_msg, list_of_keys)
-
+    print("BTC", ret_msg)
     ret_msg_queue.put((client_address, ret_msg, code, port))
 
 
@@ -213,7 +219,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
 
                     # client want to open tunnel
                     elif msg.startswith('CONNECT'):
-                        print("CONNECT", msg)
+                        print(msg)
                         msgSplit = msg.split()
                         address = msgSplit[1]
                         if address.split(':')[1].isnumeric():

@@ -13,11 +13,11 @@ class StationComs(object):
         constructor to stationComs
         """
         self.__port = port # port to connect on
-        self.__ip = ip  # ip to connect to
+        self.ip = ip  # ip to connect to
         self.__stationQueue = q     # the queue of the station 
         self.__sock = socket.socket()   # the socket of the station
         # connecting to the server
-        self.__sock.connect((self.__ip, self.__port))   
+        self.__sock.connect((self.ip, self.__port))   
         self.__bufferSize = 1024    # buffer size
         self.__running = True
         # start receiving
@@ -33,7 +33,7 @@ class StationComs(object):
             try:
                 length = self.__sock.recv(8).decode()
             except Exception as e:
-                print(e,58)
+                print(e,58, self.ip)
                 self.__sock.close()
                 break
             else:

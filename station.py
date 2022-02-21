@@ -67,7 +67,7 @@ def receive_HTTPS(socket_to_site, previous_com, sym_key):
         if msg != bytearray():
             print("enc data from site", msg)
             msg = OnionStation.buildLayerHTTPS(msg, sym_key)
-
+            print("sending previous", previous_com.ip, "from site",msg)
             previous_com.sendMsg(msg)
 
 
@@ -154,7 +154,10 @@ def open_listening_server(port):
     # print(port)
     # listen for the msg
     listening_q = queue.Queue()
-    listening_server = ServerComs.ServerComs(port, listening_q)
+    try:
+        listening_server = ServerComs.ServerComs(port, listening_q)
+    except:
+        sys.exit()
 
     # build an OK response
     OK_msg = StationProtocol.buildOKMsg()

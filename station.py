@@ -1,3 +1,5 @@
+import sys
+
 import StationProtocol
 import queue
 import RSAClass
@@ -7,7 +9,7 @@ import uuid
 import threading
 import ServerComs
 import OnionStation
-from scapy.all import *
+
 import socket
 import select
 
@@ -27,6 +29,7 @@ def send_and_receive_site(site_IP, msg):
     except:
         msg = bytearray()
     else:
+        msg = bytearray()
         while True:
             rlist, wlist, xlist = select.select([socket_to_site],[],[])
             if rlist:
@@ -36,7 +39,6 @@ def send_and_receive_site(site_IP, msg):
                     msg = bytearray()
                     break
                 if data == b'':
-                    msg = bytearray()
                     break
                 msg.extend(data)
                 if len(data) < 1024:
@@ -71,11 +73,8 @@ def receive_HTTPS(socket_to_site, previous_com, sym_key):
                             break
 
         if msg != bytearray(b''):
-            print("enc data from site", msg)
-            msg = msg.decode()
-            print(msg)
+            #print("enc data from site", msg)
             msg = OnionStation.buildLayerHTTPS(msg, sym_key)
-            print("sending previous", previous_com.ip, "from site",msg)
             previous_com.sendMsg(msg)
 
 
@@ -89,8 +88,12 @@ def send_HTTPS(listening_q, sym_key, socket_to_site):
     """
     while True:
         previous_ip, data = listening_q.get()
-        code, msg = OnionStation.remove_layer(data, sym_key)
-        socket_to_site.send(bytearray(msg.encode()))
+        if data == "dc":
+            sys.exit()
+        data = sym_key.decrypt(data)
+        code, msg = StationProtocol.unpack(data)
+        #print(msg, type(msg))
+        socket_to_site.send(bytearray(msg))
 
 
 def send_and_Connect_site(site_IP, listening_q, previous_station, previous_port, sym_key):
@@ -130,6 +133,7 @@ def receive_station_HTTPS(listening_q, next_com, previous_com, sym_key, previous
 
         # if the msg is from the next station so forward the msg to the previous station
         elif IP == nextIP:
+           # print("got msg", data)
             # add layer to the msg
             new_msg = OnionStation.buildLayerHTTPS(data, sym_key)
             # forward to previous station
@@ -177,9 +181,13 @@ def open_listening_server(port):
 
     # receive the msg from another station/the server
     previous_station, msg = listening_q.get()
+    if msg == "dc":
+        sys.exit()
+    msg = msg.decode()
     # print("RECEIVED FROM ", previous_station, msg)
     # remove one layer
     data = OnionStation.remove_layer(msg, sym_key)
+
     # print("received data- " + str(data), "FROM", previous_station)
 
     code = data[0]
@@ -191,7 +199,10 @@ def open_listening_server(port):
         site_port = data[1][2]
         msg = data[1][3]
 
+        #print(next_station)
+
     elif code == "06":
+        print("in 06")
         # extract the info
         next_station = data[1][0]
         site_IP = data[1][1]
@@ -226,6 +237,9 @@ def open_listening_server(port):
 
         # wait for returning msg
         next_station, data = listening_q.get()
+        if data == "dc":
+            sys.exit()
+        data = data.decode()
         # print("data from another station - " + str(data))
         # connection established
         if code == "17":
@@ -252,7 +266,7 @@ mac = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
                 for ele in range(0, 8 * 6, 8)][::-1])
 first_con_q = queue.Queue()
 # create a station client
-client = StationComs.StationComs(59185, "192.168.4.97", first_con_q)
+client = StationComs.StationComs(59185, "192.168.1.10", first_con_q)
 # send mac address
 print("mymac", mac)
 msg = StationProtocol.buildSendMacAdr(mac)
@@ -292,11 +306,10 @@ while connecting:
 # after the station finished connecting
 while True:
     data = first_con_q.get()
-    data = sym_key.decrypt(data)
+    data = sym_key.decrypt(data).decode()
     code, msg = StationProtocol.unpack(data)
     # print("data = " + str(data), "code = " + str(code))
     # the server has sent port
     if code == "04":
         port = msg
-        print("RECEIVED PORT ", port)
         threading.Thread(target=open_listening_server, args=(int(port),)).start()

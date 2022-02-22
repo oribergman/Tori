@@ -1,7 +1,7 @@
 import ServerProtocol
 import AESClass
 import StationProtocol
-
+import sys
 
 def buildLayer(msg, ip,lastIP, key):
     """
@@ -66,12 +66,14 @@ def removeLayerAll(msg, key_list):
     """
     count = len(key_list)
     for key in reversed(key_list):
-        print("DECRYPTING", count)
-        code, msg = removeLayer(msg, key)
+        try:
+            code, msg = removeLayer(msg, key)
+        except:
+            sys.exit()
+
         if code == "18":
             msg = msg[2]
 
-        print("GOT", msg)
         count = count - 1
 
     return (code, msg)
@@ -125,14 +127,17 @@ def buildLayerAllConnect(msg, ip_key_list, lastIP, broswerPort):
 
 
 def buildLayerAllHTTPS(msg, ip_key_list):
-    # last station enryption go first
-    data = buildLayerHTTPS(msg, ip_key_list[len(ip_key_list) - 1][1])
-    # build all the layers except the first and last station
-    for index in range(len(ip_key_list) - 2, 0, -1):
-        # build layer
-        data = buildLayerHTTPS(data, ip_key_list[index][1])
-    # first station encryption goes last
-    data = buildLayerHTTPS(data, ip_key_list[0][1])
+    if len(ip_key_list) == 1:
+        data = buildLayerHTTPS(msg, ip_key_list[0][1])
+    else:
+        # last station enryption go first
+        data = buildLayerHTTPS(msg, ip_key_list[len(ip_key_list) - 1][1])
+        # build all the layers except the first and last station
+        for index in range(len(ip_key_list) - 2, 0, -1):
+            # build layer
+            data = buildLayerHTTPS(data, ip_key_list[index][1])
+        # first station encryption goes last
+        data = buildLayerHTTPS(data, ip_key_list[0][1])
 
     return data
 

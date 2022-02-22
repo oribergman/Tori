@@ -79,7 +79,7 @@ class ProxyComs(object):
             sock = self.__open_clients[address]
             if type(msg) == str:
                 msg = msg.encode()
-            print("SENDING TO CLIENT - ", msg)
+            # print("SENDING TO CLIENT - ", msg)
             try:
                 sock.send(msg)
             except Exception as e:

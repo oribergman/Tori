@@ -48,16 +48,29 @@ class StationComs(object):
 
                 # receive the data
                 while counter < int(length):
-                    try:
-                        data = self.__sock.recv(self.__bufferSize)
-                    except Exception as e:
-                        print(e, 55)
-                        self.__sock.close()
-                        break
+                    if (int(length) - counter) > self.__bufferSize:
+
+                        try:
+                            data = self.__sock.recv(self.__bufferSize)
+                        except Exception as e:
+                            print(e, 55)
+                            self.__sock.close()
+                            break
+                        else:
+                            msg.extend(data)
+                            counter += len(data)
+                            # got full msg
                     else:
-                        msg.extend(data)
-                        counter += len(data)
-                        # got full msg
+                        try:
+                            data = self.__sock.recv((int(length) - counter))
+                        except Exception as e:
+                            print(e, 55)
+                            self.__sock.close()
+                            break
+                        else:
+                            msg.extend(data)
+                            counter += len(data)
+
                 self.__stationQueue.put(msg)
 
     def sendMsg(self, msg):

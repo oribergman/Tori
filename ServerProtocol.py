@@ -155,12 +155,11 @@ def buildConnectMsg(clientIP, browserIP, browserPort, msg):
 
 
 def buildSendMsgHTTPS(msg):
-    code = "19"
+    code = b'19'
 
     lenMsg = str(len(msg)).zfill(8)
 
-    msg = code + lenMsg + str(msg)
-
+    msg = code + lenMsg.encode() + msg
     return msg
 
 
@@ -175,6 +174,12 @@ def unpack(msg):
     msg = msg[2:]
     data = ""
 
+    if code == b'20':
+        lenMsg = int(msg[0:8].decode())
+        data = msg[8:8+lenMsg]
+    elif type(msg) == bytes:
+        code = code.decode()
+        msg = msg.decode()
     # sent mac address
     if code == "00":
         data = msg
@@ -227,15 +232,16 @@ def unpack(msg):
         # len msg
         data = (IP1, Port, msg)
 
-    elif code == "20":
-        lenMsg = int(msg[0:8])
+    elif code == b'20':
+        lenMsg = int(msg[0:8].decode())
         data = msg[8:8+lenMsg]
 
     return (code, data)
 
 
 def main():
-    print(unpack("1812192.168.1.113443"))
+    print(buildSendMsgHTTPS(bytearray(b'\\xzawad\\awdawd\\wdad')))
+    print(unpack(b'2000000019\\xzawad\\awdawd\\wdad'))
 #     print(buildConnectMsg("192.168.4.97", "192.168.4.96", 443, "CONNECT TO YOUR MAMA"))
 #     keys = RSAClass.RSAClass()
 #     pkey = keys.get_public_key_pem().decode()

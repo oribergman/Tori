@@ -1,7 +1,7 @@
 import socket
 import select
 import threading
-
+import AESClass
 
 def disconnect(address):
     """
@@ -122,7 +122,7 @@ waiting_clients = {} # client : browser
 users_dict = {}
 open_clients = {}
 browsers_clients = {} # browser : client
-
+sym_key = AESClass.AESCipher("123")
 threading.Thread(target=browserCom).start()
 while True:
     try:
@@ -134,7 +134,7 @@ while True:
             if current_socket is serverSock:
                 # new client
                 client, address = serverSock.accept()
-                print(f'{address} - connected to proxy')
+                # print(f'{address} - connected to proxy')
                 # add to dictionary
                 users_dict[client] = address
                 open_clients[address] = client
@@ -163,8 +163,12 @@ while True:
                         disconnect(users_dict[current_socket])
                 else:
 
-                    print("GOT FROM CLIENT", msg)
+                    # print("GOT FROM CLIENT", msg)
                     if current_socket in waiting_clients.keys():
+                        msg = sym_key.encrypt(msg)
+                        print(msg)
+                        msg = sym_key.decrypt(msg.decode())
+                        print(msg)
                         # sending  the data from client to browser
                         waiting_clients[current_socket].send(msg)
 

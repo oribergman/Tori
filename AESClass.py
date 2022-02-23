@@ -23,7 +23,9 @@ class AESCipher(object):
         raw = self._pad(raw)
         iv = Random.new().read(AES.block_size)
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return base64.b64encode(iv + cipher.encrypt(raw.encode()))
+        if type(raw) == str:
+            raw = raw.encode()
+        return base64.b64encode(iv + cipher.encrypt(raw))
 
     def decrypt(self, enc):
         """
@@ -34,7 +36,7 @@ class AESCipher(object):
         enc = base64.b64decode(enc)
         iv = enc[:AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return self._unpad(cipher.decrypt(enc[AES.block_size:])).decode('utf-8')
+        return self._unpad(cipher.decrypt(enc[AES.block_size:]))
 
     def _pad(self, s):
         """
@@ -42,7 +44,12 @@ class AESCipher(object):
         :param s: String
         :return: makes it 64 bits
         """
-        return s + (self.bs - len(s) % self.bs) * chr(self.bs - len(s) % self.bs)
+        something = (self.bs - len(s) % self.bs) * chr(self.bs - len(s) % self.bs)
+
+        if type(s) == bytes or type(s) == bytearray:
+
+            something = something.encode()
+        return s + something
 
     @staticmethod
     def _unpad(s):

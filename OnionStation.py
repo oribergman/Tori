@@ -19,9 +19,7 @@ def buildLayer(msg, key):
 
 
 def buildLayerHTTPS(msg, key):
-    print("msg before", msg.decode(), type(msg))
     new_msg = StationProtocol.buildSendHTTPS(msg)
-    print("msg after", new_msg)
     new_msg = key.encrypt(new_msg)
     # print("msg after", new_msg)
     return new_msg.decode()
@@ -40,7 +38,8 @@ def remove_layer(msg, key):
     :param key: the key to decrypt the data with
     :return: the msg after the decryption and after the protocol translation
     """
-    new_msg = key.decrypt(msg)
+    new_msg = key.decrypt(msg).decode()
+    print(msg)
     new_msg = StationProtocol.unpack(new_msg)
     return new_msg
 

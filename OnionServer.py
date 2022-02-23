@@ -125,14 +125,18 @@ def buildLayerAllConnect(msg, ip_key_list, lastIP, broswerPort):
 
 
 def buildLayerAllHTTPS(msg, ip_key_list):
-    # last station enryption go first
-    data = buildLayerHTTPS(msg, ip_key_list[len(ip_key_list) - 1][1])
-    # build all the layers except the first and last station
-    for index in range(len(ip_key_list) - 2, 0, -1):
-        # build layer
-        data = buildLayerHTTPS(data, ip_key_list[index][1])
-    # first station encryption goes last
-    data = buildLayerHTTPS(data, ip_key_list[0][1])
+    if len(ip_key_list) == 1:
+        data = buildLayerHTTPS(msg, ip_key_list[0][1])
+    else:
+
+        # last station enryption go first
+        data = buildLayerHTTPS(msg, ip_key_list[len(ip_key_list) - 1][1])
+        # build all the layers except the first and last station
+        for index in range(len(ip_key_list) - 2, 0, -1):
+            # build layer
+            data = buildLayerHTTPS(data, ip_key_list[index][1])
+        # first station encryption goes last
+        data = buildLayerHTTPS(data, ip_key_list[0][1])
 
     return data
 

@@ -39,7 +39,6 @@ def remove_layer(msg, key):
     :return: the msg after the decryption and after the protocol translation
     """
     new_msg = key.decrypt(msg).decode()
-    print(msg)
     new_msg = StationProtocol.unpack(new_msg)
     return new_msg
 

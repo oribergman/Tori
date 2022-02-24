@@ -181,9 +181,11 @@ def unpack(msg):
     if code == b'20':
         lenMsg = int(msg[0:8].decode())
         data = msg[8:8+lenMsg]
+
     elif type(msg) == bytes:
         code = code.decode()
         msg = msg.decode()
+
     # sent mac address
     if code == "00":
         data = msg
@@ -197,8 +199,8 @@ def unpack(msg):
         data = ""
 
     # returning packet msg
-    elif code == "07":
-        length = int(msg[0:8])
+    elif code == b'07':
+        length = int(msg[0:8].decode())
         data = msg[8:length + 8]
 
     # username and password from manager

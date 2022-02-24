@@ -55,27 +55,29 @@ def receive_HTTPS(socket_to_site, previous_com, sym_key):
     while receiving:
         msg = bytearray()
         while True:
-            try:
-                rlist, wlist, xlist = select.select([socket_to_site], [], [])
-            except:
-                pass
-            else:
-                if rlist:
-                    try:
-                        data = socket_to_site.recv(1024)
-                    except:
-                        msg = bytearray()
-                        receiving = False
+            #try:
+            rlist, wlist, xlist = select.select([socket_to_site], [], [])
+            #except:
+            #    pass
+            #else:
+            if rlist:
+                try:
+                    data = socket_to_site.recv(1024)
+                except:
+                    msg = bytearray()
+                    receiving = False
+                    break
+                else:
+                    msg.extend(data)
+                    if len(data) < 1024:
                         break
-                    else:
-                        msg.extend(data)
-                        if len(data) < 1024:
-                            break
 
         if msg != bytearray(b''):
-            print("enc data from site", msg)
+            #print("enc data from site", msg)
+            #print("enc data from site", msg)
+            #print("enc data from site", msg)
             msg = OnionStation.buildLayerHTTPS(msg, sym_key)
-            print("Sending the msg to", previous_com.ip, msg)
+            #print("Sending the msg to", previous_com.ip, msg)
             previous_com.sendMsg(msg)
 
 
@@ -101,6 +103,7 @@ def send_and_Connect_site(site_IP, listening_q, previous_station, previous_port,
     try:
         socket_to_site.connect((site_IP, 443))
     except:
+        print("No connection to ", site_IP, "Could be made")
         return 'False'
     else:
         browsers[site_IP] = (socket_to_site)
@@ -165,15 +168,13 @@ def open_listening_server(port):
     # print(port)
     # listen for the msg
     listening_q = queue.Queue()
-    try:
-        listening_server = ServerComs.ServerComs(port, listening_q)
-    except:
-        sys.exit()
+    listening_server = ServerComs.ServerComs(port, listening_q)
 
     # build an OK response
     OK_msg = StationProtocol.buildOKMsg()
     # encrypt the msg
     OK_msg_enc = sym_key.encrypt(OK_msg)
+    print("encrypted OK", OK_msg_enc, "OK", OK_msg)
     # send to the server that the station's listening server is up
     client.sendMsg(OK_msg_enc)
 
@@ -202,7 +203,6 @@ def open_listening_server(port):
         #print(next_station)
 
     elif code == "06":
-        print("in 06")
         # extract the info
         next_station = data[1][0]
         site_IP = data[1][1]
@@ -237,7 +237,6 @@ def open_listening_server(port):
 
         # wait for returning msg
         next_station, data = listening_q.get()
-        print("next station", next_station, "previous", previous_station)
         if data == "dc":
             sys.exit()
         data = data.decode()
@@ -304,6 +303,7 @@ while connecting:
         sym_key = AESClass.AESCipher(sym_key)
         connecting = False
 
+port_list = []
 # after the station finished connecting
 while True:
     data = first_con_q.get()
@@ -313,4 +313,8 @@ while True:
     # the server has sent port
     if code == "04":
         port = msg
-        threading.Thread(target=open_listening_server, args=(int(port),)).start()
+        if port in port_list:
+            print("Again", port)
+        else:
+            port_list.append(port)
+            threading.Thread(target=open_listening_server, args=(int(port), )).start()

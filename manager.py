@@ -637,7 +637,7 @@ def manager_logic(recv_q, sym_key):
     """
     while True:
         data = recv_q.get()
-        data = sym_key.decrypt(data)
+        data = sym_key.decrypt(data).decode()
         code, msg = ManagerProtocol.unpack(data)
         if code == '09':
             wx.CallAfter(pub.sendMessage, "login_ans", status=msg)

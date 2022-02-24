@@ -39,11 +39,10 @@ def buildSendMsgRet(msg):
     :return: a msg built by the protocol to send the msg in the return route throughout the stations
     """
 
-    code = "07"
+    code = b'07'
 
-    len_msg = str(len(msg)).zfill(8)
-    if type(msg) == bytearray or type(msg) == bytes:
-        msg = msg.decode()
+    len_msg = str(len(msg)).zfill(8).encode()
+
     msg = code + len_msg + msg
 
     return msg

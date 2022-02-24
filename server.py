@@ -27,7 +27,7 @@ def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q,
     :return: Sends the request of approval to the stations and waits for them to return OK
     """
 
-
+   # print("Sending port", sendingPort, "to", stations_for_msg)
     # send the port to all the stations and wait for the accept
     for station_ip in stations_for_msg:
 
@@ -46,13 +46,10 @@ def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q,
                 port_list.remove(sendingPort)
                 del ip_key_dict[ip]
                 sys.exit()
-            data = data.decode()
-            try:
-                ok_msg = ip_key_dict[station_ip].decrypt(data).decode()
-            except:
-                print("can't decrypt", data, "with", station_ip)
-                sys.exit()
             else:
+                data = data.decode()
+                ok_msg = ip_key_dict[station_ip].decrypt(data)
+                print("Unpacking", ok_msg, "DATA", data)
                 code, ok_msg = ServerProtocol.unpack(ok_msg)
                 # received OK
                 if code == "05":
@@ -78,17 +75,15 @@ def handle_send_receive_msg(data, port, client_address, dst_ip, browserPort, sta
     # print(code)
     # creating listening server
     listening_q = queue.Queue()
-    try:
-        listenting_server = ServerComs.ServerComs(int(port), listening_q)
-    except:
-        sys.exit()
+    listenting_server = ServerComs.ServerComs(int(port), listening_q)
+
+
 
     # creating sending client
     sending_q = queue.Queue()
-    try:
-        sending_client = StationComs.StationComs(port, stations[0], sending_q)
-    except:
-        sys.exit()
+    sending_client = StationComs.StationComs(port, stations[0], sending_q)
+
+
 
     # creating the list of tuples containing the ip and the key
     ip_key_list = []
@@ -181,6 +176,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                         try:
                             dst_ip = socket.gethostbyname(url)
                         except Exception as e:
+                            print("Coundln't find link", url)
                             # invalid link
                             proxy_server.disconnect(client_address)
 
@@ -229,6 +225,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                             try:
                                 browserIP = socket.gethostbyname(browserLink)
                             except:
+                                print("cant find", browserLink)
                                 # invalid link
                                 proxy_server.disconnect(client_address)
                             else:
@@ -243,7 +240,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
 
                 # if secure connection and client already connected
                 else:
-                    print("enc msg from client", msg)
+                  #  print("enc msg from client", msg)
                     port = client_browser[client_address][1]
                     # get the route of the msgs to the specific site
                     stations_for_msg = port_stations[port][0]
@@ -273,7 +270,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                     # return the msg to the client
                     proxy_server.sendMsg(client_address, msg)
 
-                elif code == '07':
+                elif code == b'07':
                     print("Response from server - ", msg)
                     # return the msg to the client
                     proxy_server.sendMsg(client_address, msg)
@@ -281,7 +278,6 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                     proxy_server.disconnect(client_address)
 
                 elif code == b'20':
-                    print("GOT CODE 20")
                     proxy_server.sendMsg(client_address, msg)
 
 
@@ -308,14 +304,10 @@ def manager_comms(manager_server_q, manager_server):
 
         # check if encrypted with sym_key after logging in
         elif ip in ip_key_dict_manager.keys():
-            try:
-                data = ip_key_dict_manager[ip].decrypt(data)
-            except:
-                del ip_key_dict_manager[ip]
+            data = ip_key_dict_manager[ip].decrypt(data).decode()
 
         # unpack the data
         code, msg = ServerProtocol.unpack(data)
-
         # the manager sent public key
         if code == '02':
             # public key of the manager
@@ -473,7 +465,7 @@ def roll_stations():
             count = count - 1
             stations_for_the_msg.append(ip_adr)
 
-    print(stations_for_the_msg)
+   # print(stations_for_the_msg)
     return stations_for_the_msg
 
 
@@ -514,11 +506,7 @@ initialized_proxy = False
 while True:
     # server for connection and change in keys with stations
     ip, data = station_server_q.get()
-    try:
-        data = data.decode()
-    except:
-
-        print(data, "DATA ERROROROROROR")
+    data = data.decode()
 
     # if the ip hasn't connected yet
     if not ip in list(ip_key_dict.keys()):

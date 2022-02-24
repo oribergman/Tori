@@ -20,6 +20,7 @@ class ServerComs(object):
         self.__serverSock.listen(3)
         self.__open_clients = {} # ip:socket
         self.__bufferSize = 1024
+        self.__receiving = True
         threading.Thread(target=self.__receive).start()
 
     def __receive(self):
@@ -27,7 +28,7 @@ class ServerComs(object):
 
         :return: receives from the socket and puts the info in the queue as (IP, msg)
         """
-        while True:
+        while self.__receiving:
             try:
                 rlist, wlist, xlist = select.select(list(self.__users_dict.keys()) + [self.__serverSock], [], [], 0.3)
             except:
@@ -70,8 +71,13 @@ class ServerComs(object):
                                             print(e, 2)
                                             self.disconnect(self.__users_dict[current_socket][0])
                                         else:
-                                            msg.extend(data)
-                                            counter += len(data)
+                                            if data == b'':
+                                                self.disconnect(self.__users_dict[current_socket][0])
+                                                msg = b''
+                                                break
+                                            else:
+                                                msg.extend(data)
+                                                counter += len(data)
 
                                     else:
                                         try:
@@ -80,10 +86,15 @@ class ServerComs(object):
                                             print(e, 2)
                                             self.disconnect(self.__users_dict[current_socket][0])
                                         else:
-                                            msg.extend(data)
-                                            counter += len(data)
-                                print("msg from",self.__users_dict[current_socket][0], msg)
-                                self.__serverQueue.put((self.__users_dict[current_socket][0], msg))
+                                            if data == b'':
+                                                self.disconnect(self.__users_dict[current_socket][0])
+                                                msg = b''
+                                                break
+                                            else:
+                                                msg.extend(data)
+                                                counter += len(data)
+                                if msg != b'':
+                                    self.__serverQueue.put((self.__users_dict[current_socket][0], msg))
 
     def sendMsg(self, ip, msg):
         """
@@ -134,7 +145,7 @@ class ServerComs(object):
                     pass
         except:
             pass
-
+        self.__receiving = False
         self.__serverSock.close()
 
 

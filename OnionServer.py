@@ -127,6 +127,12 @@ def buildLayerAllConnect(msg, ip_key_list, lastIP, broswerPort):
 
 
 def buildLayerAllHTTPS(msg, ip_key_list):
+    """
+
+    :param msg: msg to build layers on
+    :param ip_key_list: list of tuples that have (ip, key)
+    :return: builds all the layers of the msg by all the ips and keys for https
+    """
     if len(ip_key_list) == 1:
         data = buildLayerHTTPS(msg, ip_key_list[0][1])
     else:

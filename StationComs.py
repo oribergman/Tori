@@ -90,7 +90,7 @@ class StationComs(object):
         except Exception as e:
             print(e, 56)
             self.__sock.close()
-        print(f"SENDING to {self.ip}", msg)
+
     def closeAll(self):
         """
 

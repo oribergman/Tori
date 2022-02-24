@@ -93,8 +93,13 @@ def browserCom():
                         data = current_browser.recv(1024)
                     except Exception as e:
                         print(e)
-                        del waiting_clients[browsers_clients[current_browser]]
-                        del browsers_clients[current_browser]
+                        if current_browser in browsers_clients and browsers_clients[current_browser] in waiting_clients:
+                            del waiting_clients[browsers_clients[current_browser]]
+                            del browsers_clients[current_browser]
+                        elif current_browser in browsers_clients:
+                            print(browsers_clients.keys())
+                            del browsers_clients[current_browser]
+
 
                     else:
                         resp_msg.extend(data)
@@ -165,10 +170,6 @@ while True:
 
                     # print("GOT FROM CLIENT", msg)
                     if current_socket in waiting_clients.keys():
-                        msg = sym_key.encrypt(msg)
-                        print(msg)
-                        msg = sym_key.decrypt(msg.decode())
-                        print(msg)
                         # sending  the data from client to browser
                         waiting_clients[current_socket].send(msg)
 
@@ -182,11 +183,14 @@ while True:
                                 if address.split(':')[1].isnumeric():
                                     browserLink, browserPort = address.split(':')
                                     browserPort = int(browserPort)
-                                    browserIP = socket.gethostbyname(browserLink)
+                                    try:
+                                        browserIP = socket.gethostbyname(browserLink)
+                                    except:
+                                        print("FAILED", browserLink)
                                     address = (browserIP, browserPort)
                                     # connect to the site
                                     browserSocket = socket.socket()
-                                    print(address)
+
                                     try:
                                         browserSocket.connect((browserIP, browserPort))
                                     except:

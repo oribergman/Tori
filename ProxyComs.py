@@ -75,6 +75,7 @@ class ProxyComs(object):
         :param msg: msg to send
         :return: sends the msg to the ip
         """
+        flag = True
         if address in self.__open_clients.keys():
             sock = self.__open_clients[address]
             if type(msg) == str:
@@ -87,6 +88,8 @@ class ProxyComs(object):
                 self.disconnect(address)
         else:
             print("not found the address")
+            flag = False
+        return flag
 
     def disconnect(self, address):
         """
@@ -96,7 +99,7 @@ class ProxyComs(object):
         """
         if address in self.__open_clients.keys():
             try:
-                # print(f"{address} disconnected")
+                print(f"{address} disconnected")
                 self.__open_clients[address].close()
                 del self.__users_dict[self.__open_clients[address]]
                 del self.__open_clients[address]

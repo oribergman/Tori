@@ -3,6 +3,7 @@ import AESClass
 import StationProtocol
 import sys
 
+
 def buildLayer(msg, ip,lastIP, key):
     """
 
@@ -88,16 +89,13 @@ def buildLayerAll(msg, ip_key_list, lastIP):
     :return: builds all the layers of the msg by all the ips and keys
     """
     # last station enryption go first
-    if len(ip_key_list) == 1:
-        data = buildLayer(msg, lastIP, lastIP, ip_key_list[0][1])
-    else:
-        data = buildLayer(msg, lastIP, lastIP, ip_key_list[len(ip_key_list)-1][1])
-        # build all the layers except the first and last station
-        for index in range(len(ip_key_list)-2, 0, -1):
-            # build layer
-            data = buildLayer(data, ip_key_list[index+1][0], lastIP, ip_key_list[index][1])
-        # first station encryption goes last
-        data = buildLayer(data, ip_key_list[1][0], lastIP, ip_key_list[0][1])
+    data = buildLayer(msg, lastIP, lastIP, ip_key_list[len(ip_key_list)-1][1])
+    # build all the layers except the first and last station
+    for index in range(len(ip_key_list)-2, 0, -1):
+        # build layer
+        data = buildLayer(data, ip_key_list[index+1][0], lastIP, ip_key_list[index][1])
+    # first station encryption goes last
+    data = buildLayer(data, ip_key_list[1][0], lastIP, ip_key_list[0][1])
 
     return data
 
@@ -111,17 +109,14 @@ def buildLayerAllConnect(msg, ip_key_list, lastIP, broswerPort):
    :return: builds all the layers of the msg by all the ips and keys
    """
 
-    if len(ip_key_list) == 1:
-        data = buildLayerConnect(msg, lastIP, lastIP, broswerPort, ip_key_list[0][1])
-    else:
-        # last station enryption go first
-        data = buildLayerConnect(msg, lastIP, lastIP, broswerPort, ip_key_list[len(ip_key_list) - 1][1])
-        # build all the layers except the first and last station
-        for index in range(len(ip_key_list) - 2, 0, -1):
-            # build layer
-            data = buildLayerConnect(data, ip_key_list[index + 1][0], lastIP, broswerPort, ip_key_list[index][1])
-        # first station encryption goes last
-        data = buildLayerConnect(data, ip_key_list[1][0], lastIP, broswerPort, ip_key_list[0][1])
+    # last station enryption go first
+    data = buildLayerConnect(msg, lastIP, lastIP, broswerPort, ip_key_list[len(ip_key_list) - 1][1])
+    # build all the layers except the first and last station
+    for index in range(len(ip_key_list) - 2, 0, -1):
+        # build layer
+        data = buildLayerConnect(data, ip_key_list[index + 1][0], lastIP, broswerPort, ip_key_list[index][1])
+    # first station encryption goes last
+    data = buildLayerConnect(data, ip_key_list[1][0], lastIP, broswerPort, ip_key_list[0][1])
 
     return data
 
@@ -132,18 +127,16 @@ def buildLayerAllHTTPS(msg, ip_key_list):
     :param msg: msg to build layers on
     :param ip_key_list: list of tuples that have (ip, key)
     :return: builds all the layers of the msg by all the ips and keys for https
-    """
-    if len(ip_key_list) == 1:
-        data = buildLayerHTTPS(msg, ip_key_list[0][1])
-    else:
-        # last station enryption go first
-        data = buildLayerHTTPS(msg, ip_key_list[len(ip_key_list) - 1][1])
-        # build all the layers except the first and last station
-        for index in range(len(ip_key_list) - 2, 0, -1):
-            # build layer
-            data = buildLayerHTTPS(data, ip_key_list[index][1])
-        # first station encryption goes last
-        data = buildLayerHTTPS(data, ip_key_list[0][1])
+    # """
+
+    # last station enryption go first
+    data = buildLayerHTTPS(msg, ip_key_list[len(ip_key_list) - 1][1])
+    # build all the layers except the first and last station
+    for index in range(len(ip_key_list) - 2, 0, -1):
+        # build layer
+        data = buildLayerHTTPS(data, ip_key_list[index][1])
+    # first station encryption goes last
+    data = buildLayerHTTPS(data, ip_key_list[0][1])
 
     return data
 

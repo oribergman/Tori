@@ -49,6 +49,13 @@ def buildSendMsgRet(msg):
 
 
 def buildSendEstablished(browserIP, browserPort, msg):
+    """
+
+    :param browserIP: the IP of the browser
+    :param browserPort: the port of the browser
+    :param msg: the response-to-connect msg
+    :return:  a msg built by the protocol to send the msg in the return route throughout the stations (Connect Method)
+    """
 
     code = "18"
 
@@ -62,6 +69,11 @@ def buildSendEstablished(browserIP, browserPort, msg):
 
 
 def buildSendHTTPS(msg):
+    """
+
+    :param msg: msg from the site
+    :return:  a msg built by the protocol to send the msg in the return route throughout the stations from the site (HTTPS)
+    """
 
     code = b'20'
 

@@ -38,8 +38,8 @@ class ServerComs(object):
                     if current_socket is self.__serverSock:
                         # new client
                         client, address = self.__serverSock.accept()
-                       # print(address, "- CONNECTED")
-                        # print(f'{address} - connected')
+                        print(address, "- CONNECTED")
+
                         # add to dictionary
                         self.__users_dict[client] = address
                         self.__open_clients[address[0]] = client

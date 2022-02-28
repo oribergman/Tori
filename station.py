@@ -50,16 +50,21 @@ def send_and_receive_site(site_IP, msg):
 
 
 def receive_HTTPS(socket_to_site, previous_com, sym_key):
+    """
+
+    :param socket_to_site: the socket that is connected to the site
+    :param previous_com: the serverCom of the previous station
+    :param sym_key: the symetric key (AESCipher)
+    :return: receives from the site and sends to the previous station
+    """
     receiving = True
 
     while receiving:
         msg = bytearray()
         while True:
-            #try:
+
             rlist, wlist, xlist = select.select([socket_to_site], [], [])
-            #except:
-            #    pass
-            #else:
+
             if rlist:
                 try:
                     data = socket_to_site.recv(1024)
@@ -73,11 +78,7 @@ def receive_HTTPS(socket_to_site, previous_com, sym_key):
                         break
 
         if msg != bytearray(b''):
-            #print("enc data from site", msg)
-            #print("enc data from site", msg)
-            #print("enc data from site", msg)
             msg = OnionStation.buildLayerHTTPS(msg, sym_key)
-            #print("Sending the msg to", previous_com.ip, msg)
             previous_com.sendMsg(msg)
 
 
@@ -99,6 +100,15 @@ def send_HTTPS(listening_q, sym_key, socket_to_site):
 
 
 def send_and_Connect_site(site_IP, listening_q, previous_station, previous_port, sym_key):
+    """
+
+    :param site_IP: the ip of the site
+    :param listening_q: the listening queue from the server/previous station
+    :param previous_station: the serverCom of the server/previous station
+    :param previous_port: the previous port the msg has been sent on
+    :param sym_key: the symetric key (AESCipher)
+    :return: connects to the site and opens the thread to receive and send from site and to send from server to site
+    """
     socket_to_site = socket.socket()
     try:
         socket_to_site.connect((site_IP, 443))

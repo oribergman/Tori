@@ -155,6 +155,11 @@ def buildConnectMsg(clientIP, browserIP, browserPort, msg):
 
 
 def buildSendMsgHTTPS(msg):
+    """
+
+    :param msg: the msg to deliver
+    :return: msg build by the protocol to send a msg of HTTPS to browser
+    """
     if type(msg) == str:
         msg = msg.encode()
 

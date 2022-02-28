@@ -2,7 +2,6 @@ import socket
 import threading
 
 
-
 class StationComs(object):
     def __init__(self, port, ip, q):
         """

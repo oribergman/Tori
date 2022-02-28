@@ -73,9 +73,9 @@ class ProxyComs(object):
 
         :param ip: ip to send to
         :param msg: msg to send
-        :return: sends the msg to the ip
+        :return: sends the msg to the ip and true if done
         """
-        flag = True
+        flag = True # if the msg has been sent
         if address in self.__open_clients.keys():
             sock = self.__open_clients[address]
             if type(msg) == str:
@@ -87,7 +87,6 @@ class ProxyComs(object):
                 print(e,4)
                 self.disconnect(address)
         else:
-            print("not found the address")
             flag = False
         return flag
 

@@ -47,14 +47,16 @@ def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q,
                 del ip_key_dict[ip]
                 sys.exit()
             else:
-                data = data.decode()
-                ok_msg = ip_key_dict[station_ip].decrypt(data)
-                print("Unpacking", ok_msg, "DATA", data)
-                code, ok_msg = ServerProtocol.unpack(ok_msg)
-                # received OK
-                if code == "05":
-                    received_ok = True
-                    #print("GOT OK FROM", ip)
+                if station_ip == ip:
+                    data = data.decode()
+                    ok_msg = ip_key_dict[station_ip].decrypt(data)
+                    code, ok_msg = ServerProtocol.unpack(ok_msg)
+                    # received OK
+                    if code == "05":
+                        received_ok = True
+                        #print("GOT OK FROM", ip)
+                else:
+                    station_server_q.put((ip,data))
 
     # open the code that sends the msg
     #threading.Thread(target=handle_send_receive_msg, args=(msg, port, client_address, dst_ip, stations_for_msg, ret_msg_queue)).start()
@@ -168,8 +170,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                     #     proxy_server.disconnect(client_address)
                     # if its a normal http request
                     if msg.startswith("GET") or msg.startswith("POST") or msg.startswith("HEAD") or msg.startswith("PUT") or msg.startswith("DELETE") or msg.startswith("OPTIONS"):
-                        print("HTTP")
-                        print(msg)
+                        print("HTTP" , msg)
                         # extract the url
                         url = msg.split("/")[2]
                         # get the ip of the url
@@ -217,7 +218,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
 
                     # client want to open tunnel
                     elif msg.startswith('CONNECT'):
-                        #print(msg)
+                        print(msg)
                         msgSplit = msg.split()
                         address = msgSplit[1]
                         if address.split(':')[1].isnumeric():
@@ -262,7 +263,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
             if not ret_msg_queue.empty():
                 # get the ip and the msg to return
                 (client_address, msg, code, port) = ret_msg_queue.get()
-              #  print("CLIENT ADDRESS - ", client_address, "RETMSG- ", msg, "CODE - ", code)
+                print("CLIENT ADDRESS - ", client_address, "RETMSG- ", msg, "CODE - ", code)
                 if code == '18':
                     #print("SENT ESTBLISHED")
                     msg = "HTTP/1.1 200 Connection established\r\n\r\n"

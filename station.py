@@ -1,5 +1,4 @@
 import sys
-
 import StationProtocol
 import queue
 import RSAClass
@@ -9,7 +8,6 @@ import uuid
 import threading
 import ServerComs
 import OnionStation
-
 import socket
 import select
 

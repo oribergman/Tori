@@ -1,3 +1,7 @@
+import socket
+import sys
+import threading
+
 import DB
 import ServerComs
 import ServerProtocol
@@ -5,7 +9,6 @@ import queue
 import RSAClass
 import random
 import string as string_c
-from scapy.all import *
 import AESClass
 import StationComs
 import OnionServer

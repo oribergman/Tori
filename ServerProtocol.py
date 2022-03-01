@@ -133,23 +133,24 @@ def buildDeleteOK(mac):
     return msg
 
 
-def buildConnectMsg(clientIP, browserIP, browserPort, msg):
+def buildConnectMsg(passto, browserIP, browserPort, msg):
     """
 
-    :param clientIP: the ip of the client
+    :param passto: the ip of the next station
     :param browserPort: the port to connect on
-    :param browserIP: browser
+    :param browserIP: IP of the browser
+    :param msg: the msg to build on
     :return: msg build by the protocol to send a msg from the CONNECT method
     """
 
     code = "17"
 
-    lenIP1 = str(len(clientIP)).zfill(2)
+    lenIP1 = str(len(passto)).zfill(2)
     lenIP2 = str(len(browserIP)).zfill(2)
     lenPort = str(len(str(browserPort))).zfill(1)
     lenMsg = str(len(msg)).zfill(8)
 
-    ret_msg = code + lenIP1 + clientIP + lenIP2 + browserIP + lenPort + str(browserPort) + lenMsg + msg
+    ret_msg = code + lenIP1 + passto + lenIP2 + browserIP + lenPort + str(browserPort) + lenMsg + msg
 
     return ret_msg
 

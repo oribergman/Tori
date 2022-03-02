@@ -35,7 +35,6 @@ def exchange_keys(manager_client_q, manager_client, rsa_keys):
     return sym_key
 
 
-
 class mainFrame(wx.Frame):
     def __init__(self, sym_key, manager_client, parent=None):
         super(mainFrame, self).__init__(parent, title="Tori", size=(1000,800) ,style = wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX ^ wx.RESIZE_BORDER)

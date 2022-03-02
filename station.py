@@ -151,20 +151,6 @@ def receive_station_HTTPS(listening_q, next_com, previous_com, sym_key, previous
                 previous_com.sendMsg(new_msg)
         else:
             sys.exit()
-# def send_station_HTTPS(listening_next, previous_com, sym_key):
-#     """
-#
-#     :param listening_next: listening queue of the next station
-#     :param previous_com: the StationComs object of the previous station
-#     :param sym_key: the symetric key of the station
-#     :return: receives from the forward station and sends to previous station (HTTPS) (from browser to server)
-#     """
-#
-#     forward_station, data = listening_next.get()
-#     # add layer to the msg
-#     new_msg = OnionStation.buildLayerHTTPS(data, sym_key)
-#     # forward to previous station
-#     previous_com.sendMsg(new_msg)
 
 
 def open_listening_server(port):
@@ -173,7 +159,7 @@ def open_listening_server(port):
     :param port: the port to listen on
     :return: opens a listening server on the port receives and sends the data forward
     """
-    # print(port)
+
     # listen for the msg
     listening_q = queue.Queue()
     listening_server = ServerComs.ServerComs(port, listening_q)
@@ -186,14 +172,12 @@ def open_listening_server(port):
     # send to the server that the station's listening server is up
     client.sendMsg(OK_msg_enc)
 
-    # print("sent OK")
-
     # receive the msg from another station/the server
     previous_station, msg = listening_q.get()
     if msg == "dc":
         sys.exit()
     msg = msg.decode()
-    # print("RECEIVED FROM ", previous_station, msg)
+
     # remove one layer
     data = OnionStation.remove_layer(msg, sym_key)
 
@@ -208,14 +192,11 @@ def open_listening_server(port):
         site_port = data[1][2]
         msg = data[1][3]
 
-        #print(next_station)
-
     elif code == "06":
         # extract the info
         next_station = data[1][0]
         site_IP = data[1][1]
         msg = data[1][2]
-    # print(msg)
 
     previous_port = port
 
@@ -223,8 +204,6 @@ def open_listening_server(port):
     sending_q = queue.Queue()
     sending_client_previous = StationComs.StationComs(previous_port, previous_station, sending_q)
 
-    # if the next station is the site
-    # print("NEXT STATION - " + str(next_station), "SITE_IP - " + str(site_IP))
     # in case the next station is the site
     if next_station == site_IP:
         if code == '06':
@@ -248,7 +227,7 @@ def open_listening_server(port):
         if data == "dc":
             sys.exit()
         data = data.decode()
-        # print("data from another station - " + str(data))
+
         # connection established
         if code == "17":
             threading.Thread(target=receive_station_HTTPS, args=(
@@ -265,7 +244,6 @@ def open_listening_server(port):
     else:
         sys.exit()
     # send the msg to the previous station
-    # print("sending to previous", previous_station, ret_msg)
     sending_client_previous.sendMsg(ret_msg)
 
 
@@ -317,7 +295,7 @@ while True:
     data = first_con_q.get()
     data = sym_key.decrypt(data).decode()
     code, msg = StationProtocol.unpack(data)
-    # print("data = " + str(data), "code = " + str(code))
+
     # the server has sent port
     if code == "04":
         port = msg

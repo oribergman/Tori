@@ -19,13 +19,26 @@ def buildLayer(msg, key):
 
 
 def buildLayerHTTPS(msg, key):
+    """
+
+    :param msg: the msg to forward
+    :param key: symetric key for encrypt
+    :return:  :return: builds a msg according to the protocol of the returning https msg and encrypts
+    """
     new_msg = StationProtocol.buildSendHTTPS(msg)
     new_msg = key.encrypt(new_msg)
-    # print("msg after", new_msg)
     return new_msg.decode()
 
 
 def buildLayerConnect(browserIP, browserPort, key, msg):
+    """
+
+    :param browserIP: IP of the browser
+    :param browserPort: port of the browser
+    :param key: symetric key for encrypt
+    :param msg: the msg to forward
+    :return: builds a msg according to the protocol of the returning connect msg and encrypts
+    """
     new_msg = StationProtocol.buildSendEstablished(browserIP, browserPort, msg)
     new_msg = key.encrypt(new_msg)
     return new_msg.decode()

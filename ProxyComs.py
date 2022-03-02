@@ -37,7 +37,7 @@ class ProxyComs(object):
                     if current_socket is self.__serverSock:
                         # new client
                         client, address = self.__serverSock.accept()
-                        # print(f'{address} - connected to proxy')
+
                         # add to dictionary
                         self.__users_dict[client] = address
                         self.__open_clients[address] = client
@@ -80,7 +80,7 @@ class ProxyComs(object):
             sock = self.__open_clients[address]
             if type(msg) == str:
                 msg = msg.encode()
-            # print("SENDING TO CLIENT - ", msg)
+
             try:
                 sock.send(msg)
             except Exception as e:

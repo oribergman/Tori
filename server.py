@@ -44,19 +44,29 @@ def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q,
             station_server.sendMsg(station_ip, chosen_port)
             # wait for ok
             ip, data = station_server_q.get()
-            if str(data) == "dc":
+            if data == b"dc":
                 port_list.remove(sendingPort)
                 del ip_key_dict[ip]
                 sys.exit()
             else:
-                if station_ip == ip:
-                    data = data.decode()
-                    ok_msg = ip_key_dict[station_ip].decrypt(data)
-                    code, ok_msg = ServerProtocol.unpack(ok_msg)
-                    # received OK
-                    if code == "05":
-                        received_ok = True
-                        #print("GOT OK FROM", ip)
+                if station_ip == ip and type(data) == bytes:
+                    if station_ip in ip_key_dict.keys():
+                        data = data.decode()
+
+                        try:
+                            ok_msg = ip_key_dict[station_ip].decrypt(data)
+                        except:
+                            print("EXCEPTION DATA", data)
+
+                        code, ok_msg = ServerProtocol.unpack(ok_msg)
+                        # received OK
+                        if code == "05":
+                            received_ok = True
+                            #print("GOT OK FROM", ip)
+                    else:
+                        station_server_q.put((ip, data))
+                        sys.exit()
+
                 else:
                     station_server_q.put((ip,data))
 
@@ -107,11 +117,12 @@ def handle_send_receive_msg(data, port, client_address, dst_ip, browserPort, sta
     # wait for the returning msg from the site
     ip, ret_msg = listening_q.get()
     ret_msg = ret_msg.decode()
+
     # remove the port from the used ports
     port_list.remove(port)
 
     # send msg back to client
-    send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port)
+    send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port,code)
 
     if code == "17":
         while True:
@@ -120,7 +131,7 @@ def handle_send_receive_msg(data, port, client_address, dst_ip, browserPort, sta
 
             # send the msg to the client
             send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port)
-            if ret_msg == "dc":
+            if ret_msg == b"dc":
                 del port_stations[port]
                 break
 
@@ -129,13 +140,15 @@ def handle_send_receive_msg(data, port, client_address, dst_ip, browserPort, sta
         listenting_server.close_server()
 
 
-def send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port):
+def send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port, code = 0):
     """
 
     :param ret_msg: the returning msg from the site
     :param clientIP: the ip of the client
     :return: sends the data from the site to the client
     """
+    if code == "06":
+        print("DECRYPTING 06", ret_msg)
     # create the list of the decrypting keys
     list_of_keys = []
     for i in range(len(ip_key_list)-1, -1, -1):
@@ -143,7 +156,6 @@ def send_msg_to_client(ret_msg, client_address, ip_key_list, ret_msg_queue, port
 
     # remove all the layers
     code, ret_msg = OnionServer.removeLayerAll(ret_msg, list_of_keys)
-
     ret_msg_queue.put((client_address, ret_msg, code, port))
 
 
@@ -168,7 +180,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
 
                     # if its a normal http request
                     if msg.startswith("GET") or msg.startswith("POST") or msg.startswith("HEAD") or msg.startswith("PUT") or msg.startswith("DELETE") or msg.startswith("OPTIONS"):
-                        print("HTTP" , msg)
+                        print("HTTP",msg)
                         # extract the url
                         url = msg.split("/")[2]
                         # get the ip of the url
@@ -182,7 +194,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                         else:
                             # roll stations for the msg
                             stations_for_msg = roll_stations()
-
+                            print("HTTP STATIONS", stations_for_msg)
                             # roll port
                             port = roll_port()
                             code = "06"
@@ -191,7 +203,6 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
 
                     # client want to open tunnel
                     elif msg.startswith('CONNECT'):
-                        print(msg)
                         msgSplit = msg.split()
                         address = msgSplit[1]
                         if address.split(':')[1].isnumeric():
@@ -236,7 +247,10 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
             if not ret_msg_queue.empty():
                 # get the ip and the msg to return
                 (client_address, msg, code, port) = ret_msg_queue.get()
-                print("CLIENT ADDRESS - ", client_address, "RETMSG- ", msg, "CODE - ", code)
+                #print("CLIENT ADDRESS - ", client_address, "RETMSG- ", msg, "CODE - ", code)
+                if code != b'20' and code != '18':
+                    print("HTTP RESPONSE CODE", code)
+
                 if code == '18':
 
                     msg = "HTTP/1.1 200 Connection established\r\n\r\n"

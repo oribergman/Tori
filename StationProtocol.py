@@ -42,7 +42,8 @@ def buildSendMsgRet(msg):
     code = b'07'
 
     len_msg = str(len(msg)).zfill(8).encode()
-
+    if type(msg) == str:
+        msg.encode()
     msg = code + len_msg + msg
 
     return msg

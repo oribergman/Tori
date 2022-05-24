@@ -84,10 +84,12 @@ class ServerComs(object):
                                             data = current_socket.recv((int(length) - counter))
                                         except Exception as e:
                                             print(e, 2)
-                                            self.disconnect(self.__users_dict[current_socket][0])
+                                            if current_socket in self.__users_dict.keys():
+                                                self.disconnect(self.__users_dict[current_socket][0])
                                         else:
                                             if data == b'':
-                                                self.disconnect(self.__users_dict[current_socket][0])
+                                                if current_socket in self.__users_dict.keys():
+                                                    self.disconnect(self.__users_dict[current_socket][0])
                                                 msg = b''
                                                 break
                                             else:
@@ -130,7 +132,7 @@ class ServerComs(object):
                 pass
             else:
                 print("DC, IP-", ip)
-                self.__serverQueue.put((ip, f"dc"))
+                self.__serverQueue.put((ip, b"dc"))
 
     def close_server(self):
         """

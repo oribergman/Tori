@@ -134,7 +134,7 @@ def receive_station_HTTPS(listening_q, next_com, previous_com, sym_key, previous
     """
     while True:
         IP, data = listening_q.get()
-        if data != "dc":
+        if data != b"dc":
             # if the msg is from the previous station so forward the msg towards the browser
             if IP == previousIP:
                 # remove one layer from the msg
@@ -174,7 +174,7 @@ def open_listening_server(port):
 
     # receive the msg from another station/the server
     previous_station, msg = listening_q.get()
-    if msg == "dc":
+    if msg == b"dc":
         sys.exit()
     msg = msg.decode()
 
@@ -224,7 +224,7 @@ def open_listening_server(port):
 
         # wait for returning msg
         next_station, data = listening_q.get()
-        if data == "dc":
+        if data == b"dc":
             sys.exit()
         data = data.decode()
 
@@ -233,7 +233,7 @@ def open_listening_server(port):
             threading.Thread(target=receive_station_HTTPS, args=(
             listening_q, sending_client_forward, sending_client_previous, sym_key, previous_station,
             next_station)).start()
-        if data == "dc":
+        if data == b"dc":
             sys.exit()
         connected = "True"
 

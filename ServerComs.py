@@ -49,7 +49,6 @@ class ServerComs(object):
                             # receive length of msg
                             length = current_socket.recv(8).decode()
                         except Exception as e:
-                            print(e)
                             if current_socket in self.__users_dict.keys():
                                 self.disconnect(self.__users_dict[current_socket][0])
                             break

@@ -176,6 +176,7 @@ def open_listening_server(port):
     previous_station, msg = listening_q.get()
     if msg == b"dc":
         sys.exit()
+
     msg = msg.decode()
 
     # remove one layer
@@ -226,10 +227,11 @@ def open_listening_server(port):
         next_station, data = listening_q.get()
         if data == b"dc":
             sys.exit()
-        data = data.decode()
+
 
         # connection established
         if code == "17":
+            data = data.decode()
             threading.Thread(target=receive_station_HTTPS, args=(
             listening_q, sending_client_forward, sending_client_previous, sym_key, previous_station,
             next_station)).start()
@@ -238,6 +240,7 @@ def open_listening_server(port):
         connected = "True"
 
     if code == "06":
+        print("RETURNING HTTP", data)
         ret_msg = OnionStation.buildLayer(data, sym_key)
     elif code == "17" and connected == "True":
         ret_msg = OnionStation.buildLayerConnect(site_IP, 443, sym_key, data)

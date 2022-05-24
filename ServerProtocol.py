@@ -205,8 +205,12 @@ def unpack(msg):
         data = ""
 
     # returning packet msg
-    elif code == b'07':
-        length = int(msg[0:8].decode())
+    elif code == b'07' or code == "07":
+        if type(msg) == bytes:
+            length = int(msg[0:8].decode())
+        else:
+            length = int(msg[0:8])
+
         data = msg[8:length + 8]
 
     # username and password from manager

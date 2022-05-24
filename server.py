@@ -49,7 +49,7 @@ def wait_for_ok(stations_for_msg, sendingPort, station_server, station_server_q,
                 del ip_key_dict[ip]
                 sys.exit()
             else:
-                if station_ip == ip and type(data) == bytes:
+                if station_ip == ip :
                     if station_ip in ip_key_dict.keys():
                         data = data.decode()
 
@@ -258,7 +258,7 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                     # return the msg to the client
                     proxy_server.sendMsg(client_address, msg)
 
-                elif code == b'07':
+                elif code == b'07' or code == "07":
                     print("Response from server - ", msg)
                     # return the msg to the client
                     proxy_server.sendMsg(client_address, msg)

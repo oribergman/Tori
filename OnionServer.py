@@ -55,6 +55,8 @@ def removeLayer(msg, key):
     """
     new_msg = key.decrypt(msg)
     data = ServerProtocol.unpack(new_msg)
+    print("removed", type(msg), msg)
+    print("new_msg", data)
     return data
 
 
@@ -69,12 +71,14 @@ def removeLayerAll(msg, key_list):
     for key in reversed(key_list):
         try:
             code, msg = removeLayer(msg, key)
-        except:
+        except Exception as e:
+            print("Exception in removeall", e,msg)
             sys.exit()
 
         if code == "18":
             msg = msg[2]
-
+        elif code == '07' or code == b'07':
+            msg = msg.encode()
         count = count - 1
 
     return (code, msg)
@@ -143,26 +147,30 @@ def buildLayerAllHTTPS(msg, ip_key_list):
 
 def main():
     pass
-    myKey = AESClass.AESCipher("lobatuhkama")
-    myKey2 = AESClass.AESCipher("lobatuhkama2")
-    myKey3 = AESClass.AESCipher("lobatuhkama3")
-    msg = "CONNECT ME PIZZA"
-
-    ip1 = "192.168.1.1"
-    ip2 = "192.168.1.2"
-    ip3 = "192.168.1.3"
-    last_ip = "188.188.1.12"
-    print(buildLayerConnect(msg, ip1, last_ip, 443, myKey))
-    ip_key_list = [(ip1, myKey), (ip2, myKey2), (ip3, myKey3)]
-
-    print(buildLayerAllConnect(msg, ip_key_list, last_ip, 443))
-    # # ip = "10.0.0.7"
-    # # lastIP = "11.0.7.110"
-    # # enc_msg = buildLayer(msg, ip, lastIP, myKey)
-    # # print(enc_msg)
-    # msg = "1ruG/yRSMqGkXfiDgCfIUPg2W6nUI0GOT6ijFE9iOpURSDSSVRlYCQNlZl9fb96VNo8/DHoInm00QnuAEJlz+4H5SBPs+YlHQoyM9wEKnPFxlsMvtYjkaQDWiFznkCE82P35wK9MjDeAAOZLU2nYpE2A9MCElrYYVAq9VmNP8V8BA/86i5fMaAbjUPcgkcLixAOb86qB/lE3X8eSS1Trww=="
-    # key_list = [myKey3,myKey2,myKey]
-    # print(removeLayerAll(msg, key_list))
+    myKey = AESClass.AESCipher("VdLMsBmT8AgeySms")
+    myKey2 = AESClass.AESCipher("qFXm6ZI6U5b2Tbvy")
+    myKey3 = AESClass.AESCipher("rmXbnLKrC1uqyE7w")
+    list_of_keys = [myKey3, myKey2, myKey]
+    # for key in list_of_keys:
+    #     # print("key:", key)
+    print(removeLayerAll(b"wjsxhz3z79MREbIK9gFnSL/6w5P5MAQawyJrBzJzor67UOR4NyOibE4KcI/L36oNRk+JSo+W8N9A37kbSws8NsROniv9PXWsVOWThCcNiuHf9p2Rhh4WY20JdS0ZnCLVsdt4GqPjVSByjFK6IIfaZW4ofDC4drHUOgCdWgUCfPWA3A6RgGrJIXW9+oG8kOkMhPJICp8zs0bp01AdBUX+sRPLTX/9CWT1q5IR18i0Qz30qVx6ZQIqrsu3ZtHVQctXQVbTkL7oN7RcKtgDu4BbtCVZBwdWaRrZqWtJU6VcNGxOKSD/r0jD1j63CRxMVKlyAKh0z0m4pDKQ7JAnBVWWgqlK6gNyY6stjo7i7eOPrPjq1lelqa5YPlYdZJjcuoJPzd+pGuViuB17juT6pJ4jVKHVf87ePubWsbmtKkcc+/4zaUG/y6+FFA+dD5z6SPAXOcU85Pe7x6OzsjqrgfM1KZXdZuDWhtU6bypTa3fNcf6rQ7SlC45dMhvZCKvqbxEYsGkeIfEiYNxeMN+y/BJkYli7c/5wgVISGz+5hv4fxJ7OI1m84KFV4tl1Xh19ruZJGiQod7O22+TYPNvaKlBf1PyRRJjBFygkbjs7pWQdoUgNlK3WWIwKgV6CVNHQRdrek86TYLdJkf1uetrar0SiR4176oHEQFKZdpAJLku37igQpagOaf8G9QoKAweHfp7V7oOX6bCNb+BcWhxC/UD3yGlHy1cGm0Yfgb0DqSsAwddnSFBvOaJ3UpE2YLVvzzKXNBggaleVtrq2RRTEOq9QTDjO9f0oxB0zD/pg3Nj/tMSsIggR0qjNKkPEhjRWB50FTKVJZn1RMomj6M40mpolu8VrHykIPq09Kk7z+/RWCCDbWkTHx1sKCq0HHMUV6juV", list_of_keys))
+    # msg = "CONNECT ME PIZZA"
+    #
+    # ip1 = "192.168.1.1"
+    # ip2 = "192.168.1.2"
+    # ip3 = "192.168.1.3"
+    # last_ip = "188.188.1.12"
+    # print(buildLayerConnect(msg, ip1, last_ip, 443, myKey))
+    # ip_key_list = [(ip1, myKey), (ip2, myKey2), (ip3, myKey3)]
+    #
+    # print(buildLayerAllConnect(msg, ip_key_list, last_ip, 443))
+    # # # ip = "10.0.0.7"
+    # # # lastIP = "11.0.7.110"
+    # # # enc_msg = buildLayer(msg, ip, lastIP, myKey)
+    # # # print(enc_msg)
+    # # msg = "1ruG/yRSMqGkXfiDgCfIUPg2W6nUI0GOT6ijFE9iOpURSDSSVRlYCQNlZl9fb96VNo8/DHoInm00QnuAEJlz+4H5SBPs+YlHQoyM9wEKnPFxlsMvtYjkaQDWiFznkCE82P35wK9MjDeAAOZLU2nYpE2A9MCElrYYVAq9VmNP8V8BA/86i5fMaAbjUPcgkcLixAOb86qB/lE3X8eSS1Trww=="
+    # # key_list = [myKey3,myKey2,myKey]
+    # # print(removeLayerAll(msg, key_list))
 
 
 if __name__ == "__main__":

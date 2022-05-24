@@ -98,7 +98,6 @@ class ProxyComs(object):
         """
         if address in self.__open_clients.keys():
             try:
-                print(f"{address} disconnected")
                 self.__open_clients[address].close()
                 del self.__users_dict[self.__open_clients[address]]
                 del self.__open_clients[address]

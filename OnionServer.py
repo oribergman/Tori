@@ -55,8 +55,6 @@ def removeLayer(msg, key):
     """
     new_msg = key.decrypt(msg)
     data = ServerProtocol.unpack(new_msg)
-    print("removed", type(msg), msg)
-    print("new_msg", data)
     return data
 
 

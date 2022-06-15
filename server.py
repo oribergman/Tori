@@ -176,8 +176,12 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                 # extract a msg
                 client_address, msg = proxy_queue.get()
                 if client_address not in client_browser.keys():
-                    msg = msg.decode()
-
+                    try:
+                        msg = msg.decode()
+                    except:
+                        print(msg)
+                        continue
+                        
                     # if its a normal http request
                     if msg.startswith("GET") or msg.startswith("POST") or msg.startswith("HEAD") or msg.startswith("PUT") or msg.startswith("DELETE") or msg.startswith("OPTIONS"):
                         print("HTTP",msg)
@@ -236,6 +240,10 @@ def proxy(ip_key_dict, station_server, station_server_q, port_list, client_brows
                     # building a temporary ip_key list
                     ip_key_list = []
                     for i in range(len(stations_for_msg)):
+                        if stations_for_msg[i] not in ip_key_dict.keys():
+                            del port_stations[port]
+                            del client_browser[client_address]
+                            continue
                         ip_key_list.append((stations_for_msg[i], ip_key_dict[stations_for_msg[i]]))
 
                     # building all layers on top of the msg
